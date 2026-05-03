@@ -459,7 +459,11 @@ function phMesh(){mesh=new THREE.Mesh(new THREE.TorusKnotGeometry(.55,.18,100,16
 let tT;
 function toast(msg,err=false){const t=q('toast');t.textContent=msg;t.className='toast on'+(err?' err':'');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),3000)}
 
-window.addEventListener('load',()=>{init3()});
+window.addEventListener('load',()=>{
+  init3();
+  const saved=localStorage.getItem('form3d_key');
+  if(saved){q('akey').value=saved;ckK();}
+});
 </script>
 </body>
 </html>
