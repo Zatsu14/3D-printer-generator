@@ -35,7 +35,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%}
 .tab.on{background:var(--ac);color:#080809;font-weight:700}
 .pane{display:none;flex-direction:column;gap:6px}
 .pane.on{display:flex}
-.ta{width:100%;min-height:95px;resize:none;background:var(--bg3);border:1.5px solid var(--b2);border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--t);line-height:1.7;outline:none;transition:border-color .15s}
+.ta{width:100%;min-height:120px;resize:vertical;background:var(--bg3);border:1.5px solid var(--b2);border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--t);line-height:1.7;outline:none;transition:border-color .15s}
 .ta:focus{border-color:var(--ac)}
 .ta::placeholder{color:var(--t2)}
 .ct{font-family:var(--mono);font-size:9px;color:var(--t3);text-align:right}
@@ -257,7 +257,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%}
   <div class="es">
     <div class="lb">Export</div>
     <div class="ec dis" id="ex-stl" onclick="doE('stl')"><div class="ei is">STL</div><div><div class="en2">STL</div><div class="ed2">Bambu Studio · OrcaSlicer</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-    <div class="ec dis" id="ex-3mf" onclick="doE('3mf')"><div class="ei i3">3MF</div><div><div class="en2">3MF multi-couleur</div><div class="ed2">Bambu AMS</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+    <div class="ec dis" id="ex-3mf" onclick="doE('3mf')"><div class="ei i3">3MF</div><div><div class="en2">3MF multi-couleur</div><div class="ed2">Non disponible avec Tripo</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
     <div class="ec dis" id="ex-glb" onclick="doE('glb')"><div class="ei ig2">GLB</div><div><div class="en2">GLB / GLTF</div><div class="ed2">Blender · Unity</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
   </div>
 </div>
@@ -347,18 +347,24 @@ function pollT(key,id){
       const pct=task.progress||0;
       if(task.status==='success'){
         clrP();
-        // Tripo retourne les URLs dans task.output
         const out=task.output||{};
-        mUrls={glb:out.model||out.pbr_model,stl:out.model};
-        if(out.rendered_image)mUrls.thumb=out.rendered_image;
+        // Tripo retourne : model (glb), rendered_image, base_model, pbr_model
+        mUrls={
+          glb: out.pbr_model || out.model || out.base_model,
+          stl: out.model || out.base_model, // on convertira GLB→STL via export
+        };
+        if(out.rendered_image) mUrls.thumb=out.rendered_image;
+        console.log('Tripo output:', JSON.stringify(out));
         setPg(100,'Modèle prêt ✓','TRIPO · PBR');setG(false);
-        ['stl','glb'].forEach(f=>{if(mUrls[f])q('ex-'+f)?.classList.remove('dis')});
+        if(mUrls.glb) q('ex-glb')?.classList.remove('dis');
+        if(mUrls.stl) q('ex-stl')?.classList.remove('dis');
+        q('ex-3mf')?.classList.add('dis'); // Tripo ne supporte pas 3MF
         updH(id,'done',mUrls.thumb||null);
         setChip('Terminé · PBR',true);
         q('rfbar').classList.remove('on');
         q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;
         q('hb').classList.add('on');setTimeout(hidP,1500);
-        if(mUrls.glb)loadM(mUrls.glb);
+        if(mUrls.glb) loadM(mUrls.glb);
       }else if(task.status==='failed'||task.status==='cancelled'){
         clrP();setG(false);hidP();updH(id,'error',null);toast('Génération échouée : '+(task.message||''),true);
       }else{
@@ -454,7 +460,20 @@ function init3(){
 
 async function loadM(url){
   if(mesh){scene.remove(mesh);mesh=null}
-  try{const buf=await(await fetch(url)).arrayBuffer();const v=new DataView(buf);if(v.getUint32(0,true)===0x46546C67)await loadGLB(buf);else loadSTL(buf)}catch(e){phMesh()}
+  try{
+    // Passer par le proxy pour éviter le CORS sur le CDN Tripo
+    const proxyUrl = PROXY+'/model?url='+encodeURIComponent(url);
+    let resp = await fetch(proxyUrl);
+    // Si le proxy ne gère pas /model, essayer direct
+    if(!resp.ok) resp = await fetch(url);
+    const buf=await resp.arrayBuffer();
+    const v=new DataView(buf);
+    if(v.getUint32(0,true)===0x46546C67) await loadGLB(buf);
+    else loadSTL(buf);
+  }catch(e){
+    console.error('loadM error:',e);
+    toast('Erreur chargement modèle — voir console',true);
+  }
 }
 
 function loadSTL(buf){
