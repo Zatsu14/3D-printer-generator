@@ -149,7 +149,10 @@ html,body{background:var(--bg);overflow:hidden;height:100%}
   <div class="lt">FORM</div>
   <div class="ls">AI 3D · BAMBU</div>
   <span id="sch2" class="chip" style="display:none;margin-left:8px"><span class="cdot" id="sc2d"></span><span id="sct2">—</span></span>
-  <div class="tr"><span class="chip">TRIPO v2.5</span></div>
+  <div class="tr" style="display:flex;align-items:center;gap:6px">
+    <span class="chip">TRIPO v3.1</span>
+    <span class="chip" id="crd-chip"><span id="crd-val">— crédits</span></span>
+  </div>
 </div>
 <div class="L">
   <div class="sec">
@@ -206,7 +209,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%}
   <div class="gw">
     <button class="gb" id="gbtn" onclick="generate()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-      Générer — Preview
+      Générer — HD · PBR
     </button>
   </div>
 </div>
@@ -257,7 +260,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%}
   <div class="es">
     <div class="lb">Export</div>
     <div class="ec dis" id="ex-stl" onclick="doE('stl')"><div class="ei is">STL</div><div><div class="en2">STL</div><div class="ed2">Bambu Studio · OrcaSlicer</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-    <div class="ec dis" id="ex-3mf" onclick="doE('3mf')"><div class="ei i3">3MF</div><div><div class="en2">3MF multi-couleur</div><div class="ed2">Non disponible avec Tripo</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+    <div class="ec dis" id="ex-3mf" onclick="doE('3mf')"><div class="ei i3">3MF</div><div><div class="en2">3MF multi-couleur</div><div class="ed2">Bambu AMS · via conversion</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
     <div class="ec dis" id="ex-glb" onclick="doE('glb')"><div class="ei ig2">GLB</div><div><div class="en2">GLB / GLTF</div><div class="ed2">Blender · Unity</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
   </div>
 </div>
@@ -272,7 +275,12 @@ let hist=[];
 
 function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));['text','image','hybrid'].forEach(p=>q('pane-'+p).classList.toggle('on',p===m))}
 function setSt(el,s){sty=s;document.querySelectorAll('.sc').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
-function ckK(){const v=q('akey').value.trim();q('kok').classList.toggle('on',v.startsWith('tsk_'));if(v)localStorage.setItem('form3d_key',v)}
+function ckK(){
+  const v=q('akey').value.trim();
+  q('kok').classList.toggle('on',v.startsWith('tsk_'));
+  if(v)localStorage.setItem('form3d_key',v);
+  if(v.startsWith('tsk_'))fetchBalance(v);
+}
 function useT(){toast('Crée un compte sur tripo3d.ai pour ta clé tsk_...')}
 function dov(e,el){e.preventDefault();el.classList.add('drag')}
 function dlv(el){el.classList.remove('drag')}
@@ -288,10 +296,44 @@ const PROXY='https://form-3d-proxy.antho14j.workers.dev/proxy';
 async function uploadImg(key, img){
   const blob=await(await fetch(`data:${img.type||'image/jpeg'};base64,${img.b64}`)).blob();
   const fd=new FormData();fd.append('file',blob,img.name||'image.jpg');
-  const r=await fetch(PROXY+'/upload',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
+  const r=await fetch(PROXY+'/upload/sts',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
   const d=await r.json();
   if(!r.ok)throw new Error(d.message||'Upload échoué');
   return d.data.image_token;
+}
+
+// Récupère le solde de crédits
+async function fetchBalance(key){
+  try{
+    const r=await fetch(PROXY+'/user/balance',{headers:{'Authorization':'Bearer '+key}});
+    const d=await r.json();
+    if(d.code===0) q('crd-val').textContent=Math.round(d.data.balance)+' crédits';
+  }catch(e){}
+}
+
+// Convertit le modèle en STL ou 3MF via l'API Tripo
+async function convertModel(key,taskId,fmt){
+  toast('Conversion '+fmt+' en cours…');
+  try{
+    const res=await fetch(PROXY+'/task',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      body:JSON.stringify({type:'convert_model',format:fmt,original_model_task_id:taskId,flatten_bottom:true,pivot_to_center_bottom:true})
+    });
+    const d=await res.json();
+    if(!res.ok)throw new Error(d.message||'Conversion échouée');
+    const convId=d.data.task_id;
+    // Polling conversion
+    const interval=setInterval(async()=>{
+      const r2=await fetch(PROXY+'/task/'+convId,{headers:{'Authorization':'Bearer '+key}});
+      const d2=await r2.json();
+      if(d2.data?.status==='success'){
+        clearInterval(interval);
+        const url=d2.data.output?.model;
+        if(url){const a=document.createElement('a');a.href=PROXY+'/model?url='+encodeURIComponent(url);a.download='bambu.'+fmt.toLowerCase();a.click();toast('Export '+fmt+' téléchargé !');}
+      }else if(d2.data?.status==='failed'){clearInterval(interval);toast('Conversion échouée',true)}
+    },2000);
+  }catch(e){toast(e.message.slice(0,60),true)}
 }
 
 async function generate(){
@@ -301,30 +343,34 @@ async function generate(){
   if(mode==='text'&&!p){toast('Entre une description',true);return}
   if(mode==='image'&&!imgs.length){toast('Upload au moins une image',true);return}
   if(!scene)init3();
-  clrP();setG(true);setPg(0,'Connexion à Tripo3D…','TRIPO v2.5');
-  mUrls={};
+  clrP();setG(true);setPg(0,'Connexion à Tripo3D…','TRIPO v3.1');
+  mUrls={};curId=null;
   q('rfbar').classList.remove('on');
   q('cv').style.display='block';q('emp').style.display='none';
   if(mesh){scene.remove(mesh);mesh=null}
+  fetchBalance(key);
   try{
     let body;
     const BASE=PROXY+'/task';
     const hdrs={'Authorization':'Bearer '+key,'Content-Type':'application/json'};
+    const commonParams={model_version:'v3.1-20260211',pbr:true,texture_quality:'detailed',geometry_quality:'detailed'};
 
     if(mode==='text'){
-      body={type:'text_to_model',prompt:p,negative_prompt:q('neg').value.trim()||undefined,model_version:'v2.5-20250123',texture:true,pbr:true};
+      body={type:'text_to_model',prompt:p,negative_prompt:q('neg').value.trim()||undefined,...commonParams};
     } else if(mode==='image'&&imgs.length===1){
       setPg(8,'Upload de l\'image…','TRIPO');
       const tok=await uploadImg(key,imgs[0]);
-      body={type:'image_to_model',file:{type:imgs[0].type?.split('/')[1]||'jpg',file_token:tok},model_version:'v2.5-20250123',texture:true,pbr:true};
+      body={type:'image_to_model',file:{type:imgs[0].type?.split('/')[1]||'jpeg',file_token:tok},enable_image_autofix:true,orientation:'align_image',...commonParams};
     } else if(mode==='image'&&imgs.length>1){
       setPg(8,'Upload des images…','TRIPO');
       const toks=await Promise.all(imgs.map(i=>uploadImg(key,i)));
-      body={type:'multiview_to_model',files:toks.map((t,i)=>({type:imgs[i].type?.split('/')[1]||'jpg',file_token:t})),model_version:'v2.5-20250123',texture:true,pbr:true};
-    } else { // hybrid
+      // multiview: exactement 4 items [front, left, back, right] — on pad avec null
+      const files=Array.from({length:4},(_, i)=>toks[i]?{type:imgs[i].type?.split('/')[1]||'jpeg',file_token:toks[i]}:{});
+      body={type:'multiview_to_model',files,...commonParams,texture_alignment:'original_image'};
+    } else { // hybrid: text + image
       setPg(8,'Upload de l\'image…','TRIPO');
       const tok=imgs.length?await uploadImg(key,imgs[0]):null;
-      body={type:'image_to_model',file:tok?{type:imgs[0].type?.split('/')[1]||'jpg',file_token:tok}:undefined,prompt:p,model_version:'v2.5-20250123',texture:true,pbr:true};
+      body={type:'image_to_model',file:tok?{type:imgs[0].type?.split('/')[1]||'jpeg',file_token:tok}:undefined,enable_image_autofix:true,...commonParams};
     }
 
     setPg(15,'Envoi à Tripo3D…','API');
@@ -348,35 +394,34 @@ function pollT(key,id){
       if(task.status==='success'){
         clrP();
         const out=task.output||{};
-        // Tripo retourne : model (glb), rendered_image, base_model, pbr_model
         mUrls={
           glb: out.pbr_model || out.model || out.base_model,
-          stl: out.model || out.base_model, // on convertira GLB→STL via export
+          _taskId: id, // pour convert_model STL/3MF
         };
         if(out.rendered_image) mUrls.thumb=out.rendered_image;
+        if(out.consumed_credit) q('crd-val').textContent='−'+out.consumed_credit+' crédits consommés';
         console.log('Tripo output:', JSON.stringify(out));
-        setPg(100,'Modèle prêt ✓','TRIPO · PBR');setG(false);
-        if(mUrls.glb) q('ex-glb')?.classList.remove('dis');
-        if(mUrls.stl) q('ex-stl')?.classList.remove('dis');
-        q('ex-3mf')?.classList.add('dis'); // Tripo ne supporte pas 3MF
+        setPg(100,'Modèle prêt ✓','TRIPO v3.1 · PBR HD');setG(false);
+        if(mUrls.glb){q('ex-glb')?.classList.remove('dis');q('ex-stl')?.classList.remove('dis');q('ex-3mf')?.classList.remove('dis')}
         updH(id,'done',mUrls.thumb||null);
-        setChip('Terminé · PBR',true);
+        setChip('Terminé · PBR HD',true);
         q('rfbar').classList.remove('on');
         q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;
         q('hb').classList.add('on');setTimeout(hidP,1500);
         if(mUrls.glb) loadM(mUrls.glb);
-      }else if(task.status==='failed'||task.status==='cancelled'){
-        clrP();setG(false);hidP();updH(id,'error',null);toast('Génération échouée : '+(task.message||''),true);
+        setTimeout(()=>fetchBalance(key),2000);
+      }else if(task.status==='failed'||task.status==='cancelled'||task.status==='banned'){
+        clrP();setG(false);hidP();updH(id,'error',null);toast('Génération échouée : '+(task.error_msg||task.status),true);
       }else{
-        const lbl=pct<20?'Analyse du prompt…':pct<50?'Construction mesh…':pct<80?'Application textures PBR…':'Finalisation…';
-        setPg(Math.max(20,pct),lbl,'TRIPO v2.5');
+        const lbl=pct<20?'Analyse…':pct<50?'Construction mesh HD…':pct<80?'Textures PBR HD…':'Finalisation…';
+        setPg(Math.max(20,pct),lbl,'TRIPO v3.1');
       }
     }catch(e){}
   },3000);
 }
 
 function clrP(){if(poll){clearInterval(poll);poll=null}}
-function setG(v){const b=q('gbtn');b.disabled=v;b.classList.toggle('ld',v);b.innerHTML=v?'<span class="spin">⟳</span> Génération en cours…':'<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer avec Tripo3D'}
+function setG(v){const b=q('gbtn');b.disabled=v;b.classList.toggle('ld',v);b.innerHTML=v?'<span class="spin">⟳</span> Génération en cours…':'<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer — HD · PBR'}
 function setPg(p,lbl,sub){q('pov').classList.add('on');q('emp').style.display='none';const c=2*Math.PI*27,off=c-(p/100)*c;q('rfl').style.strokeDashoffset=off;q('rpct').textContent=Math.round(p)+'%';q('plb').textContent=lbl;if(sub)q('psb').textContent=sub}
 function hidP(){q('pov').classList.remove('on')}
 function setChip(txt,done){const c=q('sch2');c.style.display='inline-flex';c.classList.toggle('ac',done);q('sct2').textContent=txt;q('sc2d').style.background=done?'var(--ac)':'var(--t2)'}
@@ -384,7 +429,19 @@ function rstC(){dist=4;camera.position.set(0,0.5,4);camera.lookAt(0,0,0);if(mesh
 function togW(){wire=!wire;apM();q('bw').classList.toggle('on',wire)}
 function togC(){col=!col;apM();q('bc').classList.toggle('on',col)}
 function apM(){if(!mesh)return;mesh.traverse(n=>{if(n.isMesh){n.material.wireframe=wire;if(!wire){if(!col){n.material.map=null;n.material.color.set(0xc0c0c8);n.material.needsUpdate=true}else{if(n.userData.om)n.material.map=n.userData.om;n.material.color.set(0xffffff);n.material.needsUpdate=true}}}})}
-function doE(f){if(!mUrls[f]){toast('Génère d\'abord un modèle',true);return}const a=document.createElement('a');a.href=mUrls[f];a.download='bambu.'+f;a.click();toast('Export '+f.toUpperCase())}
+function doE(f){
+  const key=q('akey').value.trim();
+  if(!mUrls.glb){toast('Génère d\'abord un modèle',true);return}
+  if(f==='glb'){
+    const a=document.createElement('a');
+    a.href=PROXY+'/model?url='+encodeURIComponent(mUrls.glb);
+    a.download='bambu.glb';a.click();toast('Export GLB lancé');
+  }else if(f==='stl'){
+    convertModel(key,mUrls._taskId,'STL');
+  }else if(f==='3mf'){
+    convertModel(key,mUrls._taskId,'3MF');
+  }
+}
 function addH(item){hist.unshift(item);rH()}
 function updH(id,st,th){const h=hist.find(x=>x.id===id);if(h){h.status=st;h.thumb=th;rH()}}
 function rH(){const el=q('hist');if(!hist.length){el.innerHTML='<div class="he">Aucune génération<br>cette session</div>';return}el.innerHTML=hist.map((h,i)=>`<div class="hi ${i===0?'on':''}" onclick="this.parentElement.querySelectorAll('.hi').forEach(x=>x.classList.remove('on'));this.classList.add('on')"><div class="hiT">${h.thumb?`<img src="${h.thumb}"/>`:'⬡'}</div><div style="flex:1;min-width:0"><div class="hip">${(h.prompt||'').slice(0,18)}${(h.prompt||'').length>18?'…':''}</div><div class="him">${h.mode}</div></div><div class="hid d${h.status==='done'?'ok':h.status==='refined'?'rf':h.status==='error'?'er':'ld'}"></div></div>`).join('')}
