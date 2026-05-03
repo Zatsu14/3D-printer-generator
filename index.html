@@ -148,7 +148,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%}
   <div class="lt">FORM</div>
   <div class="ls">AI 3D · BAMBU</div>
   <span id="sch2" class="chip" style="display:none;margin-left:8px"><span class="cdot" id="sc2d"></span><span id="sct2">—</span></span>
-  <div class="tr"><span class="chip">MESHY-6</span></div>
+  <div class="tr"><span class="chip">TRIPO v2.5</span></div>
 </div>
 <div class="L">
   <div class="sec">
@@ -194,12 +194,12 @@ html,body{background:var(--bg);overflow:hidden;height:100%}
   <div class="sec g">
     <div class="lb">Clé API Meshy</div>
     <div class="kr">
-      <input class="inp" type="password" id="akey" placeholder="msy_••••••••••••" style="flex:1" oninput="ckK()"/>
+      <input class="inp" type="password" id="akey" placeholder="tsk_••••••••••••" style="flex:1" oninput="ckK()"/>
       <div class="kok" id="kok">✓</div>
     </div>
     <div class="kh">
-      Obtenir une clé → <a href="https://www.meshy.ai/api" target="_blank">meshy.ai/api</a><br>
-      Tester : <span onclick="useT()">clé demo</span>
+      Obtenir une clé → <a href="https://platform.tripo3d.ai" target="_blank">platform.tripo3d.ai</a><br>
+      Clé commence par <span>tsk_...</span>
     </div>
   </div>
   <div class="gw">
@@ -235,11 +235,11 @@ html,body{background:var(--bg);overflow:hidden;height:100%}
         <div class="rpc" id="rpct">0%</div>
       </div>
       <div class="plb" id="plb">Initialisation…</div>
-      <div class="psb" id="psb">MESHY-6</div>
+      <div class="psb" id="psb">TRIPO v2.5</div>
     </div>
     <div class="hb" id="hb">glisser · pivoter &nbsp;·&nbsp; scroll · zoomer</div>
   </div>
-  <div class="rfbar" id="rfbar" onclick="startRef()">
+  <div class="rfbar" id="rfbar" style="display:none!important">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4f542" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
     <div><div class="rbt">Ajouter les textures — Refine</div><div class="rbs">Génère le modèle PBR texturé + couleurs réelles</div></div>
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d4f542" stroke-width="2" style="margin-left:auto"><polyline points="9 18 15 12 9 6"/></svg>
@@ -271,15 +271,25 @@ let hist=[];
 
 function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));['text','image','hybrid'].forEach(p=>q('pane-'+p).classList.toggle('on',p===m))}
 function setSt(el,s){sty=s;document.querySelectorAll('.sc').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
-function ckK(){const v=q('akey').value.trim();q('kok').classList.toggle('on',v.startsWith('msy'));if(v)localStorage.setItem('form3d_key',v)}
-function useT(){q('akey').value='msy_dummy_api_key_for_test_mode_12345678';ckK();toast('Clé demo chargée')}
+function ckK(){const v=q('akey').value.trim();q('kok').classList.toggle('on',v.startsWith('tsk_'));if(v)localStorage.setItem('form3d_key',v)}
+function useT(){toast('Crée un compte sur tripo3d.ai pour ta clé tsk_...')}
 function dov(e,el){e.preventDefault();el.classList.add('drag')}
 function dlv(el){el.classList.remove('drag')}
 function ddr(e,s){e.preventDefault();q('drop'+s).classList.remove('drag');aFA(Array.from(e.dataTransfer.files),s)}
 function addF(e,s){aFA(Array.from(e.target.files),s)}
-function aFA(files,s){const arr=s===1?imgs1:imgs2;files.forEach(f=>{if(arr.length>=4){toast('Max 4 images');return}const r=new FileReader();r.onload=ev=>{arr.push({b64:ev.target.result.split(',')[1],url:ev.target.result,type:f.type});rG(s)};r.readAsDataURL(f)})}
+function aFA(files,s){const arr=s===1?imgs1:imgs2;files.forEach(f=>{if(arr.length>=4){toast('Max 4 images');return}const r=new FileReader();r.onload=ev=>{arr.push({b64:ev.target.result.split(',')[1],url:ev.target.result,type:f.type,name:f.name});rG(s)};r.readAsDataURL(f)})}
 function rmI(i,s,e){e.stopPropagation();(s===1?imgs1:imgs2).splice(i,1);rG(s)}
 function rG(s){const arr=s===1?imgs1:imgs2,g=q('ig'+s),dr=q('drop'+s);if(dr)dr.style.display=arr.length?'none':'';g.innerHTML='';arr.forEach((img,i)=>{const d=document.createElement('div');d.className='ith';d.innerHTML=`<img src="${img.url}"/><button class="itd" onclick="rmI(${i},${s},event)">✕</button>`;g.appendChild(d)});if(arr.length<4){const a=document.createElement('div');a.className='ita';a.textContent='+';a.onclick=()=>q('fi'+s).click();g.appendChild(a)}}
+
+// Upload une image vers Tripo et retourne le file_token
+async function uploadImg(key, img){
+  const blob=await(await fetch(`data:${img.type||'image/jpeg'};base64,${img.b64}`)).blob();
+  const fd=new FormData();fd.append('file',blob,img.name||'image.jpg');
+  const r=await fetch('https://api.tripo3d.ai/v2/openapi/upload',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.message||'Upload échoué');
+  return d.data.image_token;
+}
 
 async function generate(){
   const key=q('akey').value.trim();if(!key){toast('Clé API manquante',true);return}
@@ -288,58 +298,76 @@ async function generate(){
   if(mode==='text'&&!p){toast('Entre une description',true);return}
   if(mode==='image'&&!imgs.length){toast('Upload au moins une image',true);return}
   if(!scene)init3();
-  clrP();setG(true);setPg(0,'Connexion à Meshy…','MESHY-6');
-  mUrls={};previewId=null;
+  clrP();setG(true);setPg(0,'Connexion à Tripo3D…','TRIPO v2.5');
+  mUrls={};
   q('rfbar').classList.remove('on');
   q('cv').style.display='block';q('emp').style.display='none';
   if(mesh){scene.remove(mesh);mesh=null}
   try{
-    let ep,body;
-    if(mode==='image'&&imgs.length===1){ep='https://api.meshy.ai/openapi/v1/image-to-3d';body={image_url:`data:${imgs[0].type||'image/jpeg'};base64,${imgs[0].b64}`,ai_model:'meshy-6',target_formats:['glb','stl'],should_remesh:true,should_texture:true}}
-    else if(mode==='image'&&imgs.length>1){ep='https://api.meshy.ai/openapi/v1/multiimage-to-3d';body={image_urls:imgs.map(i=>`data:${i.type||'image/jpeg'};base64,${i.b64}`),ai_model:'meshy-6',target_formats:['glb','stl'],should_remesh:true,should_texture:true}}
-    else{ep='https://api.meshy.ai/openapi/v2/text-to-3d';body={mode:'preview',prompt:p,negative_prompt:q('neg').value.trim()||undefined,art_style:sty,ai_model:'meshy-6',target_formats:['glb','stl'],should_remesh:true};if(mode==='hybrid'&&imgs.length)body.image_url=`data:${imgs[0].type||'image/jpeg'};base64,${imgs[0].b64}`}
-    setPg(5,'Envoi à Meshy…','API');
-    const res=await fetch(ep,{method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const data=await res.json();if(!res.ok)throw new Error(data.message||data.error||JSON.stringify(data));
-    curId=data.result;if(mode!=='image'||imgs.length===1)previewId=curId;
+    let body;
+    const BASE='https://api.tripo3d.ai/v2/openapi/task';
+    const hdrs={'Authorization':'Bearer '+key,'Content-Type':'application/json'};
+
+    if(mode==='text'){
+      body={type:'text_to_model',prompt:p,negative_prompt:q('neg').value.trim()||undefined,model_version:'v2.5-20250123',texture:true,pbr:true};
+    } else if(mode==='image'&&imgs.length===1){
+      setPg(8,'Upload de l\'image…','TRIPO');
+      const tok=await uploadImg(key,imgs[0]);
+      body={type:'image_to_model',file:{type:imgs[0].type?.split('/')[1]||'jpg',file_token:tok},model_version:'v2.5-20250123',texture:true,pbr:true};
+    } else if(mode==='image'&&imgs.length>1){
+      setPg(8,'Upload des images…','TRIPO');
+      const toks=await Promise.all(imgs.map(i=>uploadImg(key,i)));
+      body={type:'multiview_to_model',files:toks.map((t,i)=>({type:imgs[i].type?.split('/')[1]||'jpg',file_token:t})),model_version:'v2.5-20250123',texture:true,pbr:true};
+    } else { // hybrid
+      setPg(8,'Upload de l\'image…','TRIPO');
+      const tok=imgs.length?await uploadImg(key,imgs[0]):null;
+      body={type:'image_to_model',file:tok?{type:imgs[0].type?.split('/')[1]||'jpg',file_token:tok}:undefined,prompt:p,model_version:'v2.5-20250123',texture:true,pbr:true};
+    }
+
+    setPg(15,'Envoi à Tripo3D…','API');
+    const res=await fetch(BASE,{method:'POST',headers:hdrs,body:JSON.stringify(body)});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.message||JSON.stringify(data));
+    curId=data.data.task_id;
     addH({id:curId,prompt:p||(imgs[0]?.name||'Image'),mode,status:'loading'});
-    setChip('Preview · mesh',false);pollT(key,curId,ep,false);
-  }catch(e){setG(false);hidP();toast(e.message.slice(0,60),true)}
+    setChip('Génération…',false);
+    pollT(key,curId);
+  }catch(e){setG(false);hidP();toast(e.message.slice(0,70),true)}
 }
 
-function pollT(key,id,origEp,isRef){
-  let gep=isRef?'https://api.meshy.ai/openapi/v2/text-to-3d/'+id:origEp&&origEp.includes('multiimage')?'https://api.meshy.ai/openapi/v1/multiimage-to-3d/'+id:origEp&&origEp.includes('image-to-3d')?'https://api.meshy.ai/openapi/v1/image-to-3d/'+id:'https://api.meshy.ai/openapi/v2/text-to-3d/'+id;
+function pollT(key,id){
   poll=setInterval(async()=>{
     try{
-      const r=await fetch(gep,{headers:{'Authorization':'Bearer '+q('akey').value.trim()}});
-      const d=await r.json();const pct=d.progress||0;
-      if(d.status==='SUCCEEDED'){
-        clrP();mUrls=d.model_urls||{};setPg(100,isRef?'Textures ✓':'Mesh prêt ✓','OK');setG(false);
-        ['stl','glb','3mf'].forEach(f=>{if(mUrls[f])q('ex-'+f)?.classList.remove('dis')});
-        updH(id,isRef?'refined':'done',d.model_urls?.thumbnail);
-        if(!isRef&&(mode==='text'||mode==='hybrid')){q('rfbar').classList.add('on');setChip('Preview · mesh',false)}
-        else{setChip('Refined · texturé',true);q('rfbar').classList.remove('on')}
+      const r=await fetch('https://api.tripo3d.ai/v2/openapi/task/'+id,{headers:{'Authorization':'Bearer '+key}});
+      const d=await r.json();
+      const task=d.data;
+      const pct=task.progress||0;
+      if(task.status==='success'){
+        clrP();
+        // Tripo retourne les URLs dans task.output
+        const out=task.output||{};
+        mUrls={glb:out.model||out.pbr_model,stl:out.model};
+        if(out.rendered_image)mUrls.thumb=out.rendered_image;
+        setPg(100,'Modèle prêt ✓','TRIPO · PBR');setG(false);
+        ['stl','glb'].forEach(f=>{if(mUrls[f])q('ex-'+f)?.classList.remove('dis')});
+        updH(id,'done',mUrls.thumb||null);
+        setChip('Terminé · PBR',true);
+        q('rfbar').classList.remove('on');
         q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;
         q('hb').classList.add('on');setTimeout(hidP,1500);
-        if(mUrls.glb||mUrls.stl)loadM(mUrls.glb||mUrls.stl,isRef);
-      }else if(d.status==='FAILED'){clrP();setG(false);hidP();updH(id,'error',null);toast('Génération échouée',true)}
-      else{const lbl=isRef?(pct<50?'Génération textures…':'Finalisation PBR…'):(pct<30?'Analyse…':pct<65?'Construction mesh…':'Optimisation…');setPg(Math.max(10,pct),lbl,isRef?'REFINE · PBR':'PREVIEW · MESH')}
+        if(mUrls.glb)loadM(mUrls.glb);
+      }else if(task.status==='failed'||task.status==='cancelled'){
+        clrP();setG(false);hidP();updH(id,'error',null);toast('Génération échouée : '+(task.message||''),true);
+      }else{
+        const lbl=pct<20?'Analyse du prompt…':pct<50?'Construction mesh…':pct<80?'Application textures PBR…':'Finalisation…';
+        setPg(Math.max(20,pct),lbl,'TRIPO v2.5');
+      }
     }catch(e){}
   },3000);
 }
 
-async function startRef(){
-  const key=q('akey').value.trim();if(!previewId||!key)return;
-  q('rfbar').classList.remove('on');setG(true);setPg(5,'Lancement refine…','PBR');clrP();
-  try{
-    const res=await fetch('https://api.meshy.ai/openapi/v2/text-to-3d',{method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({mode:'refine',preview_task_id:previewId,target_formats:['glb','stl']})});
-    const d=await res.json();if(!res.ok)throw new Error(d.message||JSON.stringify(d));
-    curId=d.result;addH({id:curId,prompt:'Refine',mode:'refine',status:'loading'});pollT(key,curId,null,true);
-  }catch(e){setG(false);hidP();toast(e.message.slice(0,60),true)}
-}
-
 function clrP(){if(poll){clearInterval(poll);poll=null}}
-function setG(v){const b=q('gbtn');b.disabled=v;b.classList.toggle('ld',v);b.innerHTML=v?'<span class="spin">⟳</span> Génération en cours…':'<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer — Preview'}
+function setG(v){const b=q('gbtn');b.disabled=v;b.classList.toggle('ld',v);b.innerHTML=v?'<span class="spin">⟳</span> Génération en cours…':'<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer avec Tripo3D'}
 function setPg(p,lbl,sub){q('pov').classList.add('on');q('emp').style.display='none';const c=2*Math.PI*27,off=c-(p/100)*c;q('rfl').style.strokeDashoffset=off;q('rpct').textContent=Math.round(p)+'%';q('plb').textContent=lbl;if(sub)q('psb').textContent=sub}
 function hidP(){q('pov').classList.remove('on')}
 function setChip(txt,done){const c=q('sch2');c.style.display='inline-flex';c.classList.toggle('ac',done);q('sct2').textContent=txt;q('sc2d').style.background=done?'var(--ac)':'var(--t2)'}
