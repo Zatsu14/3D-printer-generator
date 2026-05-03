@@ -282,11 +282,13 @@ function aFA(files,s){const arr=s===1?imgs1:imgs2;files.forEach(f=>{if(arr.lengt
 function rmI(i,s,e){e.stopPropagation();(s===1?imgs1:imgs2).splice(i,1);rG(s)}
 function rG(s){const arr=s===1?imgs1:imgs2,g=q('ig'+s),dr=q('drop'+s);if(dr)dr.style.display=arr.length?'none':'';g.innerHTML='';arr.forEach((img,i)=>{const d=document.createElement('div');d.className='ith';d.innerHTML=`<img src="${img.url}"/><button class="itd" onclick="rmI(${i},${s},event)">✕</button>`;g.appendChild(d)});if(arr.length<4){const a=document.createElement('div');a.className='ita';a.textContent='+';a.onclick=()=>q('fi'+s).click();g.appendChild(a)}}
 
+const PROXY='https://form-3d-proxy.antho14j.workers.dev/proxy';
+
 // Upload une image vers Tripo et retourne le file_token
 async function uploadImg(key, img){
   const blob=await(await fetch(`data:${img.type||'image/jpeg'};base64,${img.b64}`)).blob();
   const fd=new FormData();fd.append('file',blob,img.name||'image.jpg');
-  const r=await fetch('https://api.tripo3d.ai/v2/openapi/upload',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
+  const r=await fetch(PROXY+'/upload',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
   const d=await r.json();
   if(!r.ok)throw new Error(d.message||'Upload échoué');
   return d.data.image_token;
@@ -306,7 +308,7 @@ async function generate(){
   if(mesh){scene.remove(mesh);mesh=null}
   try{
     let body;
-    const BASE='https://api.tripo3d.ai/v2/openapi/task';
+    const BASE=PROXY+'/task';
     const hdrs={'Authorization':'Bearer '+key,'Content-Type':'application/json'};
 
     if(mode==='text'){
@@ -339,7 +341,7 @@ async function generate(){
 function pollT(key,id){
   poll=setInterval(async()=>{
     try{
-      const r=await fetch('https://api.tripo3d.ai/v2/openapi/task/'+id,{headers:{'Authorization':'Bearer '+key}});
+      const r=await fetch(PROXY+'/task/'+id,{headers:{'Authorization':'Bearer '+key}});
       const d=await r.json();
       const task=d.data;
       const pct=task.progress||0;
