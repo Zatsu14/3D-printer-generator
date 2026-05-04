@@ -355,6 +355,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
   </div>
   <div class="pp-bar" id="pp-bar">
     <div class="pp-lbl">Post-processing — applique sur le modèle généré</div>
+    <button class="pp-btn" id="pp-refine" style="border:1.5px solid var(--ac);color:var(--ac);background:var(--ac3)" onclick="ppAction('refine')"><span class="pp-btn-ico">⬆️</span> Raffiner HD</button>
     <button class="pp-btn" id="pp-lowpoly" style="border:1.5px solid var(--b2)" onclick="ppAction('lowpoly')"><span class="pp-btn-ico">🔺</span> Low-poly</button>
     <button class="pp-btn" id="pp-lego" style="border:1.5px solid var(--b2)" onclick="ppAction('lego')"><span class="pp-btn-ico">🧱</span> Lego</button>
     <button class="pp-btn" id="pp-voxel" style="border:1.5px solid var(--b2)" onclick="ppAction('voxel')"><span class="pp-btn-ico">📦</span> Voxel</button>
@@ -583,16 +584,17 @@ async function ppAction(action){
     if(action==='texture'){openModal('modal-retex');btn.classList.remove('pp-loading');return}
     if(action==='rig'){buildAnimGrid();openModal('modal-anim');btn.classList.remove('pp-loading');return}
     let body;
-    if(action==='lowpoly')body={type:'highpoly_to_lowpoly',original_model_task_id:ppTaskId,quad:false,face_limit:10000};
+    if(action==='refine')body={type:'refine_model',original_model_task_id:ppTaskId,texture_quality:'detailed',pbr:true};
+    else if(action==='lowpoly')body={type:'highpoly_to_lowpoly',original_model_task_id:ppTaskId,quad:false,face_limit:10000};
     else if(action==='segment')body={type:'mesh_segmentation',original_model_task_id:ppTaskId};
     else body={type:'stylize_model',style:action,original_model_task_id:ppTaskId};
-    toast(action+' en cours…');
+    toast(action==='refine'?'Raffinage HD en cours (~3-5 min)…':action+' en cours…');
     const res=await fetch(PROXY+'/task',{method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await res.json();if(!res.ok)throw new Error(d.message);
     const ppId=d.data.task_id;
     const pint=setInterval(async()=>{
       const r2=await fetch(PROXY+'/task/'+ppId,{headers:{'Authorization':'Bearer '+key}});const d2=await r2.json();
-      if(d2.data?.status==='success'){clearInterval(pint);btn.classList.remove('pp-loading');btn.classList.add('pp-done');const u=d2.data.output?.model;if(u){ppTaskId=ppId;mUrls.glb=u;loadM(u)}toast('✓ '+action+' appliqué','ok')}
+      if(d2.data?.status==='success'){clearInterval(pint);btn.classList.remove('pp-loading');btn.classList.add('pp-done');const u=d2.data.output?.model;if(u){ppTaskId=ppId;mUrls.glb=u;loadM(u)}toast(action==='refine'?'✓ Modèle raffiné HD !':'✓ '+action+' appliqué','ok')}
       else if(['failed','cancelled'].includes(d2.data?.status)){clearInterval(pint);btn.classList.remove('pp-loading');toast(action+' échoué',true)}
     },3000);
   }catch(e){btn.classList.remove('pp-loading');toast(e.message.slice(0,60),true)}
