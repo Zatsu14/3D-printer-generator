@@ -9,8 +9,8 @@
 :root{
   --bg:#080809;--bg2:#0f0f12;--bg3:#17171b;--bg4:#1e1e24;
   --b:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.13);--b3:rgba(255,255,255,0.22);
-  --t:#f0f0f0;--t2:#9090a0;--t3:#505060;
-  --ac:#d4f542;--ac2:rgba(212,245,66,.14);--ac3:rgba(212,245,66,.06);
+  --t:#f4f4f4;--t2:#b8b8cc;--t3:#787890;
+  --ac:#76b900;--ac2:rgba(118,185,0,.18);--ac3:rgba(118,185,0,.08);
   --red:#ff4f4f;--blue:#4fc3f7;--purple:#b06ef3;--orange:#f5a623;
   --mono:'Space Mono',monospace;--dis:'Space Grotesk',sans-serif;
 }
@@ -51,7 +51,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .inp::placeholder{color:var(--t3)}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-radius:11px;border:1.5px solid var(--b2);background:var(--bg3)}
 .toggle-label{font-size:12px;font-weight:600;color:var(--t)}
-.toggle-sub{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:2px}
+.toggle-sub{font-family:var(--mono);font-size:10px;color:var(--t2);margin-top:3px}
 .toggle{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0;position:absolute}
 .toggle-track{position:absolute;inset:0;background:var(--bg2);border:1.5px solid var(--b2);border-radius:100px;transition:all .2s}
@@ -74,7 +74,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .q-card.on{border-color:var(--ac);background:var(--ac3)}
 .q-card-name{font-size:13px;font-weight:700;color:var(--t)}
 .q-card.on .q-card-name{color:var(--ac)}
-.q-card-cr,.q-card-time{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:3px}
+.q-card-cr,.q-card-time{font-family:var(--mono);font-size:10px;color:var(--t2);margin-top:3px}
 .key-row{display:flex;gap:5px;align-items:center}
 .kok{width:24px;height:24px;border-radius:6px;background:var(--ac2);border:1.5px solid var(--ac);display:none;align-items:center;justify-content:center;font-size:9px;color:var(--ac);flex-shrink:0;font-weight:700}
 .kok.on{display:flex}
@@ -85,7 +85,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .cost-label{font-family:var(--mono);font-size:10px;color:var(--t3)}
 .cost-val{font-family:var(--mono);font-size:11px;color:var(--ac);font-weight:700}
 .gb{width:100%;padding:14px;border-radius:12px;background:var(--ac);border:none;cursor:pointer;font-family:var(--dis);font-size:14px;font-weight:700;color:#080809;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s;letter-spacing:.03em}
-.gb:hover:not(:disabled){background:#e4ff70;transform:translateY(-2px);box-shadow:0 6px 24px rgba(212,245,66,.3)}
+.gb:hover:not(:disabled){background:#8fd400;transform:translateY(-2px);box-shadow:0 6px 24px rgba(118,185,0,.35)}
 .gb:active:not(:disabled){transform:none;box-shadow:none}
 .gb:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .gb.ld{background:var(--bg3);color:var(--t2);border:1.5px solid var(--b2);box-shadow:none}
@@ -116,11 +116,14 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .psb{font-family:var(--mono);font-size:8px;color:var(--t3);letter-spacing:.08em}
 .hb{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:none;font-family:var(--mono);font-size:9px;color:var(--t3);background:var(--bg3);border:1px solid var(--b2);border-radius:100px;padding:4px 12px;white-space:nowrap}
 .hb.on{display:block}
-.pp-bar{display:none;flex-shrink:0;padding:10px 14px;border-top:1px solid var(--b2);background:var(--bg2);gap:6px;flex-wrap:wrap;align-items:center}
+.pp-bar{display:none;flex-shrink:0;padding:12px 14px;border-top:1px solid var(--b2);background:var(--bg2);gap:8px;flex-direction:column}
 .pp-bar.on{display:flex}
+.pp-bar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .pp-lbl{font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;width:100%;margin-bottom:3px;font-weight:700}
-.pp-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:9px;border:1.5px solid var(--b2);background:var(--bg3);cursor:pointer;transition:all .15s;font-family:var(--mono);font-size:10px;color:var(--t2);white-space:nowrap;border:none;outline:none}
-.pp-btn:hover{border-color:var(--b3)!important;color:var(--t)}
+.pp-btn{display:flex;align-items:flex-start;gap:0;padding:11px 14px;border-radius:10px;border:1.5px solid var(--b2);background:var(--bg3);cursor:pointer;transition:all .2s;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--t);outline:none;flex-direction:column;width:100%}
+.pp-btn:hover{background:var(--bg4);border-color:var(--b3)!important;transform:translateY(-1px)}
+.pp-btn-head{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.pp-btn-sub{font-size:10px;font-weight:400;color:var(--t);opacity:.75;white-space:normal;line-height:1.55;max-width:130px}
 .pp-btn.pp-loading{opacity:.5;cursor:not-allowed}
 .pp-btn.pp-done{border-color:var(--ac)!important;color:var(--ac);background:var(--ac3)}
 .pp-btn-ico{font-size:12px}
@@ -139,7 +142,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .hiT{width:34px;height:34px;border-radius:6px;background:var(--bg2);border:1px solid var(--b2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
 .hiT img{width:100%;height:100%;object-fit:cover}
 .hip{font-size:11px;font-weight:700;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
-.him{font-family:var(--mono);font-size:9px;color:var(--t2);margin-top:2px}
+.him{font-family:var(--mono);font-size:10px;color:var(--t2);margin-top:2px}
 .hid{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-left:auto}
 .dok{background:var(--ac)}.der{background:var(--red)}.dld{background:var(--t3);animation:pu 1.5s ease infinite}
 @keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
@@ -183,8 +186,55 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .mbtn.sec{background:var(--bg2);color:var(--t2);border:1.5px solid var(--b2)}
 .mbtn.sec:hover{color:var(--t)}
 .mbtn.pri{background:var(--ac);color:#080809}
-.mbtn.pri:hover{background:#e4ff70}
+.mbtn.pri:hover{background:#8fd400}
 .mv-hint{padding:7px 10px;border-radius:7px;background:var(--bg3);border:1px solid var(--b2);font-family:var(--mono);font-size:9px;color:var(--t2);line-height:1.6}
+
+/* ── MATERIAL SELECTOR ── */
+.mat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:8px}
+.mat-card{padding:7px 4px;border-radius:8px;border:1.5px solid var(--b2);background:var(--bg3);cursor:pointer;transition:all .15s;text-align:center}
+.mat-card:hover{border-color:var(--b3)}
+.mat-card.on{border-color:var(--ac);background:var(--ac3)}
+.mat-name{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--t)}
+.mat-card.on .mat-name{color:var(--ac)}
+.mat-den{font-family:var(--mono);font-size:8px;color:var(--t3);margin-top:2px}
+.fil-ctrl{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.fil-ctrl label{font-family:var(--mono);font-size:9px;color:var(--t3);white-space:nowrap}
+.fil-price-inp{flex:1;padding:5px 8px;border-radius:7px;background:var(--bg2);border:1.5px solid var(--b2);font-family:var(--mono);font-size:11px;color:var(--t);outline:none;min-width:0}
+.fil-price-inp:focus{border-color:var(--ac)}
+.fil-cost{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ac);white-space:nowrap}
+/* ── SCALE SLIDER ── */
+.scale-wrap{display:none;align-items:center;gap:5px}
+.scale-wrap input[type=range]{width:72px;accent-color:var(--ac);cursor:pointer}
+.scale-lbl{font-family:var(--mono);font-size:9px;color:var(--t2);min-width:32px;text-align:right}
+/* ── COMPARE OVERLAY ── */
+.cmp-overlay{position:absolute;inset:0;display:none;z-index:4;pointer-events:none}
+.cmp-overlay.on{display:block}
+.cmp-left{position:absolute;top:0;left:0;bottom:0;width:50%;background:rgba(8,8,9,.88);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px}
+.cmp-left img{max-width:100%;max-height:80%;object-fit:contain;opacity:.9}
+.cmp-divider{position:absolute;top:0;bottom:0;width:2px;background:var(--ac);left:50%;transform:translateX(-50%)}
+.cmp-label-l,.cmp-label-r{position:absolute;top:9px;font-family:var(--mono);font-size:8px;padding:3px 8px;border-radius:100px;background:rgba(0,0,0,.75);color:var(--t2)}
+.cmp-label-l{left:8px}.cmp-label-r{right:8px}
+/* ── BATCH ── */
+.batch-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.batch-lbl{font-family:var(--mono);font-size:9px;color:var(--t3)}
+.batch-btns{display:flex;gap:3px}
+.batch-btn{padding:4px 9px;border-radius:6px;border:1.5px solid var(--b2);background:transparent;color:var(--t3);font-family:var(--mono);font-size:9px;cursor:pointer;transition:all .15s}
+.batch-btn.on{border-color:var(--ac);color:var(--ac);background:var(--ac3)}
+.batch-tray{display:none;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.batch-tray.on{display:flex}
+.batch-item{width:56px;height:56px;border-radius:8px;border:1.5px solid var(--b2);background:var(--bg3);cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;position:relative;flex-shrink:0}
+.batch-item:hover{border-color:var(--b3)}
+.batch-item.on{border-color:var(--ac);box-shadow:0 0 0 2px rgba(118,185,0,.35)}
+.batch-item img{width:100%;height:100%;object-fit:cover}
+.batch-item-lbl{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:7px;background:rgba(0,0,0,.8);color:var(--t2);padding:1px 5px;border-radius:4px;white-space:nowrap}
+/* ── SESSION STATS ── */
+.stats-wrap{padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat-card{padding:12px;border-radius:10px;border:1.5px solid var(--b2);background:var(--bg3)}
+.stat-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--ac);line-height:1}
+.stat-lbl{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:4px;text-transform:uppercase;letter-spacing:.1em}
+.stat-reset{width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--b2);background:transparent;color:var(--t3);font-family:var(--mono);font-size:9px;cursor:pointer;transition:all .15s;margin-top:auto}
+.stat-reset:hover{border-color:var(--red);color:var(--red)}
 
 /* ── RESPONSIVE MOBILE ── */
 .mob-nav{display:none}
@@ -319,6 +369,8 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     <div class="kh">Créer une clé → <a href="https://platform.tripo3d.ai" target="_blank">platform.tripo3d.ai</a></div>
   </div>
   <div class="gw">
+    <div class="batch-row"><span class="batch-lbl">Variantes en parallèle</span><div class="batch-btns"><button class="batch-btn on" onclick="setBatch(1,this)">×1</button><button class="batch-btn" onclick="setBatch(2,this)">×2</button><button class="batch-btn" onclick="setBatch(3,this)">×3</button></div></div>
+    <div class="batch-tray" id="batch-tray"></div>
     <div class="cost-row"><span class="cost-label">Coût estimé</span><span class="cost-val" id="cost-val">— crédits</span></div>
     <button class="gb" id="gbtn" onclick="generate()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>Générer
@@ -330,10 +382,18 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 <div class="C">
   <div class="vtb">
     <span class="chip top-stage" id="stage-chip2"><span class="chip-dot" id="stage-dot2"></span><span id="stage-txt2">—</span></span>
-    <div class="vtb-r">
-      <button class="ib" id="bw" onclick="togW()" disabled title="Wireframe"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></button>
-      <button class="ib w" id="bc" onclick="togC()" disabled>Couleur</button>
-      <button class="ib" id="br" onclick="rstC()" disabled title="Reset"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+    <div class="vtb-r" style="gap:8px">
+      <div class="scale-wrap" id="scale-wrap">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--t3)"><path d="M21 21l-6-6m6 6v-4.5M21 21h-4.5"/><path d="M3 3l6 6M3 3v4.5M3 3h4.5"/></svg>
+        <input type="range" min="10" max="400" value="100" id="scale-sl" oninput="setScale(this.value)">
+        <span class="scale-lbl" id="scale-lbl">100%</span>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="ib" id="bcmp" onclick="toggleCompare()" disabled title="Avant/Après"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="3" x2="12" y2="21"/></svg></button>
+        <button class="ib" id="bw" onclick="togW()" disabled title="Wireframe"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></button>
+        <button class="ib w" id="bc" onclick="togC()" disabled>Couleur</button>
+        <button class="ib" id="br" onclick="rstC()" disabled title="Reset"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+      </div>
     </div>
   </div>
   <div class="vw">
@@ -343,6 +403,12 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
       <p>Configure et génère ton modèle 3D</p>
     </div>
     <canvas id="cv"></canvas>
+    <div class="cmp-overlay" id="cmp-overlay">
+      <div class="cmp-left"><img id="cmp-orig" src="" alt="Original" style="display:none"><span style="font-family:var(--mono);font-size:10px;color:var(--t3)" id="cmp-no-thumb">Pas d'aperçu</span></div>
+      <div class="cmp-divider"></div>
+      <span class="cmp-label-l">Original</span>
+      <span class="cmp-label-r">Post-processé</span>
+    </div>
     <div class="pov" id="pov">
       <div class="rw">
         <svg class="rg" width="70" height="70" viewBox="0 0 70 70"><circle class="rbg" cx="35" cy="35" r="30"/><circle class="rfl" id="rfl" cx="35" cy="35" r="30"/></svg>
@@ -355,23 +421,27 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
   </div>
   <div class="pp-bar" id="pp-bar">
     <div class="pp-lbl">Post-processing — applique sur le modèle généré</div>
-    <button class="pp-btn" id="pp-lowpoly" style="border:1.5px solid var(--b2)" onclick="ppAction('lowpoly')"><span class="pp-btn-ico">🔺</span> Low-poly</button>
-    <button class="pp-btn" id="pp-lego" style="border:1.5px solid var(--b2)" onclick="ppAction('lego')"><span class="pp-btn-ico">🧱</span> Lego</button>
-    <button class="pp-btn" id="pp-voxel" style="border:1.5px solid var(--b2)" onclick="ppAction('voxel')"><span class="pp-btn-ico">📦</span> Voxel</button>
-    <button class="pp-btn" id="pp-voronoi" style="border:1.5px solid var(--b2)" onclick="ppAction('voronoi')"><span class="pp-btn-ico">🕸</span> Voronoi</button>
-    <button class="pp-btn" id="pp-segment" style="border:1.5px solid var(--b2)" onclick="ppAction('segment')"><span class="pp-btn-ico">✂️</span> Segmenter</button>
-    <button class="pp-btn" id="pp-rig" style="border:1.5px solid var(--b2)" onclick="ppAction('rig')"><span class="pp-btn-ico">🦾</span> Rigger</button>
-    <button class="pp-btn" id="pp-texture" style="border:1.5px solid var(--b2)" onclick="ppAction('texture')"><span class="pp-btn-ico">🎨</span> Re-texturer</button>
+    <div class="pp-bar-grid">
+      <button class="pp-btn" id="pp-refine" style="border:1.5px solid var(--ac);color:var(--ac);background:var(--ac3)" onclick="ppAction('refine')"><div class="pp-btn-head"><span class="pp-btn-ico">⬆️</span> Raffiner HD</div><div class="pp-btn-sub">Repasse en qualité HD — géométrie + textures améliorées</div></button>
+      <button class="pp-btn" id="pp-lowpoly" style="border:1.5px solid var(--b2)" onclick="ppAction('lowpoly')"><div class="pp-btn-head"><span class="pp-btn-ico">🔺</span> Low-poly</div><div class="pp-btn-sub">Réduit les polygones pour l'impression ou le jeu vidéo</div></button>
+      <button class="pp-btn" id="pp-lego" style="border:1.5px solid var(--b2)" onclick="ppAction('lego')"><div class="pp-btn-head"><span class="pp-btn-ico">🧱</span> Lego</div><div class="pp-btn-sub">Transforme le modèle en briques Lego</div></button>
+      <button class="pp-btn" id="pp-voxel" style="border:1.5px solid var(--b2)" onclick="ppAction('voxel')"><div class="pp-btn-head"><span class="pp-btn-ico">📦</span> Voxel</div><div class="pp-btn-sub">Pixelise en cubes 3D style Minecraft</div></button>
+      <button class="pp-btn" id="pp-voronoi" style="border:1.5px solid var(--b2)" onclick="ppAction('voronoi')"><div class="pp-btn-head"><span class="pp-btn-ico">🕸</span> Voronoi</div><div class="pp-btn-sub">Structure alvéolaire légère — idéale pour l'impression</div></button>
+      <button class="pp-btn" id="pp-segment" style="border:1.5px solid var(--b2)" onclick="ppAction('segment')"><div class="pp-btn-head"><span class="pp-btn-ico">✂️</span> Segmenter</div><div class="pp-btn-sub">Découpe le modèle en parties séparées</div></button>
+      <button class="pp-btn" id="pp-rig" style="border:1.5px solid var(--b2)" onclick="ppAction('rig')"><div class="pp-btn-head"><span class="pp-btn-ico">🦾</span> Rigger</div><div class="pp-btn-sub">Ajoute un squelette et des animations (GLB/FBX)</div></button>
+      <button class="pp-btn" id="pp-texture" style="border:1.5px solid var(--b2)" onclick="ppAction('texture')"><div class="pp-btn-head"><span class="pp-btn-ico">🎨</span> Re-texturer</div><div class="pp-btn-sub">Applique un nouveau style de texture via prompt</div></button>
+    </div>
   </div>
 </div>
 
 <!-- RIGHT -->
 <div class="R">
   <div class="r-tabs">
-    <button class="r-tab on" data-rt="hist" onclick="setRTab('hist')">Historique</button>
+    <button class="r-tab on" data-rt="hist" onclick="setRTab('hist')">Hist.</button>
     <button class="r-tab" data-rt="specs" onclick="setRTab('specs')">Specs</button>
-    <button class="r-tab" data-rt="fils" onclick="setRTab('fils')">Filaments</button>
+    <button class="r-tab" data-rt="fils" onclick="setRTab('fils')">Filam.</button>
     <button class="r-tab" data-rt="exp" onclick="setRTab('exp')">Export</button>
+    <button class="r-tab" data-rt="stats" onclick="setRTab('stats')">Stats</button>
   </div>
 
   <div class="r-pane on" id="rpane-hist">
@@ -385,8 +455,29 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
   </div>
 
   <div class="r-pane" id="rpane-fils">
+    <div style="padding:10px 12px;border-bottom:1px solid var(--b);flex-shrink:0">
+      <div class="lbl" style="margin-bottom:7px">Matériau</div>
+      <div class="mat-grid" id="mat-grid"></div>
+      <div class="fil-ctrl">
+        <label>Prix/kg (€)</label>
+        <input class="fil-price-inp" type="number" id="mat-price" value="25" min="1" max="500" step="1" oninput="setMatPrice(this.value)">
+        <span class="fil-cost" id="fil-cost-eur">—</span>
+      </div>
+    </div>
     <div class="fil-wrap" id="fil-list"><div class="specs-empty">Génère un modèle pour<br>voir les filaments estimés</div></div>
     <div class="fil-foot" id="fil-foot"></div>
+  </div>
+
+  <div class="r-pane" id="rpane-stats">
+    <div class="stats-wrap">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-val" id="st-gens">0</div><div class="stat-lbl">Générations</div></div>
+        <div class="stat-card"><div class="stat-val" id="st-creds">0</div><div class="stat-lbl">Crédits dépensés</div></div>
+        <div class="stat-card"><div class="stat-val" id="st-time">—</div><div class="stat-lbl">Temps moyen</div></div>
+        <div class="stat-card"><div class="stat-val" id="st-sess">0m</div><div class="stat-lbl">Durée session</div></div>
+      </div>
+      <button class="stat-reset" onclick="resetStats()">Réinitialiser les stats</button>
+    </div>
   </div>
 
   <div class="r-pane" id="rpane-exp">
@@ -458,6 +549,19 @@ let drag=false,mbtn=-1,lx=0,ly=0,rx=0,ry=0,dist=4,panX=0,panY=0;
 let hist=[];
 let selectedAnims=new Set(['preset:idle','preset:walk']);
 let currentSpecs=null;
+let currentMat='PLA',matPrice=25,modelScale=1;
+let origUrl=null,origThumb=null,compareMode=false;
+let batchN=1,batchResults=[];
+let genStartTime=0;
+const STATS_KEY='form3d_stats_v1';
+let stats={gens:0,creds:0,totalMs:0,t0:Date.now()};
+const MATS={
+  PLA:{density:1.24,label:'PLA'},
+  PETG:{density:1.27,label:'PETG'},
+  TPU:{density:1.21,label:'TPU'},
+  ABS:{density:1.04,label:'ABS'},
+  ASA:{density:1.07,label:'ASA'},
+};
 
 const QCFG={
   turbo:{model:'Turbo-v1.0-20250506',geo:'standard',texQ:'standard',cost:{text:10,image:20,multi:20}},
@@ -468,7 +572,7 @@ const QCFG={
 function setQ(el,q2){quality=q2;document.querySelectorAll('.q-card').forEach(c=>c.classList.remove('on'));el.classList.add('on');updateCost()}
 function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));['text','image','multiview','hybrid'].forEach(p=>{const el=q('pane-'+p);if(el)el.classList.toggle('on',p===m)});updateCost()}
 function setRTab(t){document.querySelectorAll('.r-tab').forEach(el=>el.classList.toggle('on',el.dataset.rt===t));document.querySelectorAll('.r-pane').forEach(el=>el.classList.toggle('on',el.id==='rpane-'+t))}
-function updateCost(){const cfg=QCFG[quality];const k=mode==='text'?'text':mode==='multiview'?'multi':'image';let cr=cfg.cost[k];if(quality==='hd')cr+=20;q('cost-val').textContent='~'+cr+' crédits'}
+function updateCost(){const cfg=QCFG[quality];const k=mode==='text'?'text':mode==='multiview'?'multi':'image';let cr=cfg.cost[k];if(quality==='hd')cr+=20;const tot=cr*batchN;q('cost-val').textContent='~'+tot+' crédits'+(batchN>1?' (×'+batchN+')':'')}
 
 function ckK(){const v=q('akey').value.trim();q('kok').classList.toggle('on',v.startsWith('tsk_'));if(v)localStorage.setItem('form3d_key',v);if(v.startsWith('tsk_'))fetchBalance(v)}
 async function fetchBalance(key){try{const r=await fetch(PROXY+'/user/balance',{headers:{'Authorization':'Bearer '+key}});const d=await r.json();if(d.code===0)q('crd-val').textContent=Math.round(d.data.balance)+' crédits'}catch(e){}}
@@ -504,6 +608,30 @@ async function autoMultiview(){
   }catch(e){toast(e.message.slice(0,60),true)}
 }
 
+async function buildBody(key,cfg){
+  const p=mode==='hybrid'?q('prompt2').value.trim():q('prompt').value.trim();
+  const imgArr=mode==='hybrid'?imgs[3]:mode==='image'?imgs[1]:imgs[2];
+  const pbr=q('opt-pbr').checked,autofix=q('opt-autofix').checked;
+  let body;
+  if(mode==='text'){
+    body={type:'text_to_model',prompt:p,negative_prompt:q('neg').value.trim()||undefined,model_version:cfg.model,pbr,texture_quality:cfg.texQ,geometry_quality:cfg.geo};
+  }else if(mode==='image'){
+    const tok=await uploadImg(key,imgArr[0]);
+    body={type:'image_to_model',file:{type:imgArr[0].type?.split('/')[1]||'jpeg',file_token:tok},model_version:cfg.model,pbr,texture_quality:cfg.texQ,geometry_quality:cfg.geo,enable_image_autofix:autofix};
+    if(q('opt-orient').checked)body.orientation='align_image';
+  }else if(mode==='multiview'){
+    const toks=await Promise.all(imgArr.map(i=>uploadImg(key,i)));
+    const files=Array.from({length:4},(_,i)=>toks[i]?{type:imgArr[i].type?.split('/')[1]||'jpeg',file_token:toks[i]}:{});
+    body={type:'multiview_to_model',files,model_version:cfg.model,pbr,texture_quality:cfg.texQ,geometry_quality:cfg.geo};
+    if(q('opt-orient').checked)body.orientation='align_image';
+  }else{
+    const tok=imgArr.length?await uploadImg(key,imgArr[0]):null;
+    body={type:'image_to_model',file:tok?{type:imgArr[0].type?.split('/')[1]||'jpeg',file_token:tok}:undefined,model_version:cfg.model,pbr,texture_quality:cfg.texQ,geometry_quality:cfg.geo,enable_image_autofix:autofix};
+    if(p)body.prompt=p;
+  }
+  return body;
+}
+
 async function generate(){
   const key=q('akey').value.trim();if(!key){toast('Clé API manquante',true);return}
   const p=mode==='hybrid'?q('prompt2').value.trim():q('prompt').value.trim();
@@ -512,31 +640,24 @@ async function generate(){
   if((mode==='image'||mode==='multiview')&&!imgArr.length){toast('Upload une image',true);return}
   if(!scene)init3();
   clrP();setG(true);setPg(0,'Connexion…','TRIPO');
-  mUrls={};curId=null;ppTaskId=null;
+  mUrls={};curId=null;ppTaskId=null;origUrl=null;origThumb=null;compareMode=false;
+  q('cmp-overlay').classList.remove('on');q('bcmp').disabled=true;
   q('cv').style.display='block';q('emp').style.display='none';q('pp-bar').classList.remove('on');
   if(mesh){scene.remove(mesh);mesh=null}
   document.querySelectorAll('.pp-btn').forEach(b=>b.classList.remove('pp-done','pp-loading'));
+  genStartTime=Date.now();
   const cfg=QCFG[quality];
   const hdrs={'Authorization':'Bearer '+key,'Content-Type':'application/json'};
-  const pbr=q('opt-pbr').checked,autofix=q('opt-autofix').checked;
   try{
-    let body;
-    if(mode==='text'){
-      body={type:'text_to_model',prompt:p,negative_prompt:q('neg').value.trim()||undefined,model_version:cfg.model,pbr,texture_quality:cfg.texQ,geometry_quality:cfg.geo};
-    }else if(mode==='image'){
-      setPg(8,'Upload image…','TRIPO');const tok=await uploadImg(key,imgArr[0]);
-      body={type:'image_to_model',file:{type:imgArr[0].type?.split('/')[1]||'jpeg',file_token:tok},model_version:cfg.model,pbr,texture_quality:cfg.texQ,geometry_quality:cfg.geo,enable_image_autofix:autofix};
-      if(q('opt-orient').checked)body.orientation='align_image';
-    }else if(mode==='multiview'){
-      setPg(8,'Upload images…','TRIPO');const toks=await Promise.all(imgArr.map(i=>uploadImg(key,i)));
-      const files=Array.from({length:4},(_,i)=>toks[i]?{type:imgArr[i].type?.split('/')[1]||'jpeg',file_token:toks[i]}:{});
-      body={type:'multiview_to_model',files,model_version:cfg.model,pbr,texture_quality:cfg.texQ,geometry_quality:cfg.geo};
-      if(q('opt-orient').checked)body.orientation='align_image';
-    }else{
-      setPg(8,'Upload image…','TRIPO');const tok=imgArr.length?await uploadImg(key,imgArr[0]):null;
-      body={type:'image_to_model',file:tok?{type:imgArr[0].type?.split('/')[1]||'jpeg',file_token:tok}:undefined,model_version:cfg.model,pbr,texture_quality:cfg.texQ,geometry_quality:cfg.geo,enable_image_autofix:autofix};
-      if(p)body.prompt=p;
+    if(batchN>1){
+      setPg(15,'Upload…','TRIPO');
+      const body=await buildBody(key,cfg);
+      setPg(20,'Lancement batch…','TRIPO');
+      await batchGenerate(key,body,hdrs,p,imgArr);
+      return;
     }
+    setPg(8,'Upload…','TRIPO');
+    const body=await buildBody(key,cfg);
     setPg(15,'Envoi…','API');
     const res=await fetch(PROXY+'/task',{method:'POST',headers:hdrs,body:JSON.stringify(body)});
     const data=await res.json();if(!res.ok)throw new Error(data.message||JSON.stringify(data));
@@ -544,6 +665,63 @@ async function generate(){
     addH({id:curId,prompt:p||(imgArr[0]?.name||'Image'),mode,status:'loading',quality});
     setStage('Génération '+quality.toUpperCase()+'…',false);pollT(key,curId);
   }catch(e){setG(false);hidP();toast(e.message.slice(0,70),true)}
+}
+
+async function batchGenerate(key,body,hdrs,p,imgArr){
+  const tray=q('batch-tray');tray.classList.add('on');batchResults=Array(batchN).fill(null);
+  tray.innerHTML=Array.from({length:batchN},(_,i)=>`<div class="batch-item" id="bi-${i}"><span class="spin">⟳</span><div class="batch-item-lbl">V${i+1}</div></div>`).join('');
+  const promises=Array.from({length:batchN},async(_,idx)=>{
+    try{
+      const res=await fetch(PROXY+'/task',{method:'POST',headers:hdrs,body:JSON.stringify(body)});
+      const data=await res.json();if(!res.ok)throw new Error(data.message);
+      const taskId=data.data.task_id;
+      if(idx===0){curId=taskId;addH({id:taskId,prompt:p||(imgArr[0]?.name||'Image'),mode,status:'loading',quality});setStage('Batch '+quality.toUpperCase()+'…',false)}
+      return await pollOneTask(key,taskId);
+    }catch(e){const bi=q('bi-'+idx);if(bi){bi.innerHTML=`<div class="batch-item-lbl">V${idx+1} ✗</div>`;bi.style.borderColor='var(--red)'}throw e}
+  });
+  Promise.allSettled(promises).then(results=>{
+    setG(false);hidP();
+    results.forEach((r,i)=>{
+      const bi=q('bi-'+i);if(!bi)return;
+      if(r.status==='fulfilled'&&r.value){
+        batchResults[i]=r.value;
+        bi.innerHTML=r.value.thumb?`<img src="${r.value.thumb}"><div class="batch-item-lbl">V${i+1}</div>`:`<span style="font-size:12px">✓</span><div class="batch-item-lbl">V${i+1}</div>`;
+        bi.onclick=()=>selectBatch(i);
+        if(i===0)selectBatch(0);
+      }
+    });
+    updateStats();
+  });
+}
+
+async function pollOneTask(key,taskId){
+  return new Promise((resolve,reject)=>{
+    const pint=setInterval(async()=>{
+      try{
+        const r=await fetch(PROXY+'/task/'+taskId,{headers:{'Authorization':'Bearer '+key}});
+        const d=await r.json();const task=d.data;
+        if(task.status==='success'){
+          clearInterval(pint);const out=task.output||{};
+          resolve({glb:out.pbr_model||out.model||out.base_model,thumb:out.rendered_image,taskId});
+        }else if(['failed','cancelled','banned','expired'].includes(task.status)){
+          clearInterval(pint);reject(new Error('Tâche échouée'));
+        }
+      }catch(e){clearInterval(pint);reject(e)}
+    },3000);
+  });
+}
+
+function selectBatch(i){
+  const r=batchResults[i];if(!r)return;
+  document.querySelectorAll('.batch-item').forEach((b,j)=>b.classList.toggle('on',j===i));
+  mUrls={glb:r.glb,_taskId:r.taskId,thumb:r.thumb};ppTaskId=r.taskId;
+  origUrl=r.glb;origThumb=r.thumb||null;
+  if(r.glb)loadM(r.glb);
+  ['glb','stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'));
+  q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;q('bcmp').disabled=false;
+  q('pp-bar').classList.add('on');q('hb').classList.add('on');
+  updH(r.taskId,'done',r.thumb||null);setStage('Prêt · '+quality.toUpperCase(),true);
+  setTimeout(()=>{const key=q('akey').value.trim();if(key)fetchBalance(key);showSpecs(hist[0]);showFils()},1500);
 }
 
 function pollT(key,id){
@@ -555,15 +733,18 @@ function pollT(key,id){
         clrP();const out=task.output||{};
         mUrls={glb:out.pbr_model||out.model||out.base_model,_taskId:id};
         if(out.rendered_image)mUrls.thumb=out.rendered_image;
-        ppTaskId=id;
+        ppTaskId=id;origUrl=mUrls.glb;origThumb=mUrls.thumb||null;
         setPg(100,'Modèle prêt ✓','TRIPO v3.1');setG(false);
         ['glb','stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'));
         updH(id,'done',mUrls.thumb||null);
         setStage('Prêt · '+quality.toUpperCase(),true);
-        q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;
+        q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;q('bcmp').disabled=false;
         q('hb').classList.add('on');q('pp-bar').classList.add('on');
         setTimeout(hidP,1500);
         if(mUrls.glb)loadM(mUrls.glb);
+        const cfg2=QCFG[quality];const ck=mode==='text'?'text':mode==='multiview'?'multi':'image';
+        const cr=(cfg2.cost[ck]||0)+(quality==='hd'?20:0);
+        stats.gens++;stats.creds+=cr;stats.totalMs+=Date.now()-genStartTime;saveStats();updateStats();
         setTimeout(()=>{fetchBalance(key);showSpecs(hist[0]);showFils()},1500);
       }else if(['failed','cancelled','banned','expired'].includes(task.status)){
         clrP();setG(false);hidP();updH(id,'error',null);toast('Génération échouée'+(task.error_msg?' : '+task.error_msg:''),true);
@@ -583,16 +764,17 @@ async function ppAction(action){
     if(action==='texture'){openModal('modal-retex');btn.classList.remove('pp-loading');return}
     if(action==='rig'){buildAnimGrid();openModal('modal-anim');btn.classList.remove('pp-loading');return}
     let body;
-    if(action==='lowpoly')body={type:'highpoly_to_lowpoly',original_model_task_id:ppTaskId,quad:false,face_limit:10000};
+    if(action==='refine')body={type:'refine_model',original_model_task_id:ppTaskId,texture_quality:'detailed',pbr:true};
+    else if(action==='lowpoly')body={type:'highpoly_to_lowpoly',original_model_task_id:ppTaskId,quad:false,face_limit:10000};
     else if(action==='segment')body={type:'mesh_segmentation',original_model_task_id:ppTaskId};
     else body={type:'stylize_model',style:action,original_model_task_id:ppTaskId};
-    toast(action+' en cours…');
+    toast(action==='refine'?'Raffinage HD en cours (~3-5 min)…':action+' en cours…');
     const res=await fetch(PROXY+'/task',{method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await res.json();if(!res.ok)throw new Error(d.message);
     const ppId=d.data.task_id;
     const pint=setInterval(async()=>{
       const r2=await fetch(PROXY+'/task/'+ppId,{headers:{'Authorization':'Bearer '+key}});const d2=await r2.json();
-      if(d2.data?.status==='success'){clearInterval(pint);btn.classList.remove('pp-loading');btn.classList.add('pp-done');const u=d2.data.output?.model;if(u){ppTaskId=ppId;mUrls.glb=u;loadM(u)}toast('✓ '+action+' appliqué','ok')}
+      if(d2.data?.status==='success'){clearInterval(pint);btn.classList.remove('pp-loading');btn.classList.add('pp-done');const u=d2.data.output?.model;if(u){ppTaskId=ppId;mUrls.glb=u;loadM(u)}toast(action==='refine'?'✓ Modèle raffiné HD !':'✓ '+action+' appliqué','ok')}
       else if(['failed','cancelled'].includes(d2.data?.status)){clearInterval(pint);btn.classList.remove('pp-loading');toast(action+' échoué',true)}
     },3000);
   }catch(e){btn.classList.remove('pp-loading');toast(e.message.slice(0,60),true)}
@@ -654,7 +836,7 @@ function rH(){const el=q('hist');if(!hist.length){el.innerHTML='<div class="he">
 
 function showSpecs(h){
   const bbox=mesh?new THREE.Box3().setFromObject(mesh):null;const sz=new THREE.Vector3();if(bbox)bbox.getSize(sz);
-  const sc=mesh?.scale?.x||1;const dX=Math.round(Math.max(sz.x/sc,0.05)*100)||100,dY=Math.round(Math.max(sz.y/sc,0.05)*100)||150,dZ=Math.round(Math.max(sz.z/sc,0.05)*100)||100;
+  const bsc=mesh?.userData?.baseScale||mesh?.scale?.x||1;const dX=Math.round(Math.max(sz.x/bsc,0.05)*100*modelScale)||100,dY=Math.round(Math.max(sz.y/bsc,0.05)*100*modelScale)||150,dZ=Math.round(Math.max(sz.z/bsc,0.05)*100*modelScale)||100;
   const maxD=Math.max(dX,dY,dZ);const vol=Math.round(dX*dY*dZ*0.35/1000);const wPLA=Math.round(vol*1.24);const lM=(wPLA/1.24*0.01).toFixed(1);
   const tMin=Math.round(wPLA*3.5);const tH=Math.floor(tMin/60),tM=tMin%60;
   const layerH=maxD>200?'0.10mm':maxD>100?'0.15mm':'0.20mm';
@@ -674,13 +856,54 @@ function sR(ico,label,val){return`<div class="spec-row"><span class="spec-ico">$
 function copySpecs(){if(!currentSpecs)return;const t=`=== FORM 3D — Bambu Studio ===\nPrompt: ${currentSpecs.prompt}\nDate: ${currentSpecs.date}\nQualité: ${currentSpecs.quality}\n\nDimensions: ${currentSpecs.dims}\nPoids: ${currentSpecs.weight}\nFilament: ${currentSpecs.fil}\nTemps: ${currentSpecs.time}\n\nÉpaisseur couche: ${currentSpecs.layer}\nRemplissage: ${currentSpecs.infill}\nSupports: ${currentSpecs.supp}\nPlateau: ${currentSpecs.plate}\nMatériau: ${currentSpecs.mat}`;navigator.clipboard.writeText(t).then(()=>toast('✓ Specs copiées !','ok')).catch(()=>toast('Erreur copie',true))}
 
 function showFils(){
-  const cols=inferCols();const bg=20;const per=Math.floor(100/cols.length),rem=100-per*cols.length;
-  const items=cols.map((c,i)=>({color:c.hex,name:c.name+' (PLA)',pct:per+(i===0?rem:0),g:Math.round(bg*(per+(i===0?rem:0))/100)}));
+  const cols=inferCols();const mat=MATS[currentMat]||MATS.PLA;const bg=20;
+  const per=Math.floor(100/cols.length),rem=100-per*cols.length;
+  const items=cols.map((c,i)=>{const pct=per+(i===0?rem:0);return{color:c.hex,name:c.name+' ('+currentMat+')',pct,g:Math.round(bg*mat.density*pct/100)}});
   const tg=items.reduce((a,f)=>a+f.g,0);
+  const mLen=(tg/(mat.density*Math.PI*0.875*0.875)).toFixed(1);
+  const cost=(tg/1000*matPrice).toFixed(2);
   q('fil-list').innerHTML=items.map(f=>`<div class="fi"><div class="fsw" style="background:${f.color}"></div><div style="flex:1"><div class="fin-n">${f.name}</div><div class="fin-p">${f.pct}%</div><div class="fbw"><div class="fb" style="width:${f.pct}%;background:${f.color}"></div></div></div><div class="fg">${f.g}g</div></div>`).join('');
-  q('fil-foot').textContent=`Total : ~${tg}g · ~${(tg*0.025).toFixed(1)}m · ${items.length} filament${items.length>1?'s':''}`;
+  q('fil-foot').textContent=`Total : ~${tg}g · ~${mLen}m · ${items.length} filament${items.length>1?'s':''}`;
+  const ce=q('fil-cost-eur');if(ce)ce.textContent=cost+' €';
 }
+function setMat(m){currentMat=m;document.querySelectorAll('.mat-card').forEach(c=>c.classList.toggle('on',c.dataset.mat===m));showFils()}
+function setMatPrice(v){matPrice=parseFloat(v)||25;showFils()}
+function initMatGrid(){q('mat-grid').innerHTML=Object.entries(MATS).map(([k,m])=>`<div class="mat-card${k===currentMat?' on':''}" data-mat="${k}" onclick="setMat('${k}')"><div class="mat-name">${m.label}</div><div class="mat-den">${m.density}g/cm³</div></div>`).join('')}
 function inferCols(){const p=(q('prompt').value||q('prompt2').value||'').toLowerCase();const map=[{k:['blanc','white'],hex:'#f0f0f0',name:'Blanc'},{k:['noir','black'],hex:'#1a1a1a',name:'Noir'},{k:['rouge','red'],hex:'#cc2200',name:'Rouge'},{k:['bleu','blue'],hex:'#1144cc',name:'Bleu'},{k:['vert','green'],hex:'#116633',name:'Vert'},{k:['gris','grey','gray'],hex:'#888888',name:'Gris'},{k:['or','gold'],hex:'#d4aa20',name:'Doré'},{k:['violet','purple'],hex:'#663388',name:'Violet'},{k:['marron','brown'],hex:'#6b3a2a',name:'Marron'},{k:['orange'],hex:'#dd6611',name:'Orange'},{k:['rose','pink'],hex:'#e060a0',name:'Rose'}];const found=map.filter(m=>m.k.some(k=>p.includes(k)));return found.length?found:[{hex:'#c0c0c8',name:'Gris neutre'},{hex:'#1a1a1a',name:'Noir'}]}
+
+function setBatch(n,el){batchN=n;document.querySelectorAll('.batch-btn').forEach(b=>b.classList.remove('on'));el.classList.add('on');q('batch-tray').classList.remove('on');batchResults=[];updateCost()}
+
+function setScale(v){
+  modelScale=v/100;
+  if(mesh&&mesh.userData.baseScale)mesh.scale.setScalar(mesh.userData.baseScale*modelScale);
+  q('scale-lbl').textContent=v+'%';
+  if(hist.length)showSpecs(hist[0]);
+}
+
+function toggleCompare(){
+  if(!origUrl){toast('Génère d\'abord un modèle',true);return}
+  compareMode=!compareMode;
+  q('cmp-overlay').classList.toggle('on',compareMode);
+  q('bcmp').classList.toggle('on',compareMode);
+  if(compareMode){
+    const img=q('cmp-orig');const noThumb=q('cmp-no-thumb');
+    if(origThumb){img.src=origThumb;img.style.display='block';noThumb.style.display='none'}
+    else{img.style.display='none';noThumb.style.display='block'}
+  }
+}
+
+function loadStats(){try{const s=JSON.parse(localStorage.getItem(STATS_KEY)||'null');if(s&&s.gens!==undefined){stats.gens=s.gens||0;stats.creds=s.creds||0;stats.totalMs=s.totalMs||0;stats.t0=stats.t0}}catch(e){}}
+function saveStats(){try{localStorage.setItem(STATS_KEY,JSON.stringify(stats))}catch(e){}}
+function resetStats(){stats={gens:0,creds:0,totalMs:0,t0:Date.now()};saveStats();updateStats()}
+function updateStats(){
+  if(!q('st-gens'))return;
+  q('st-gens').textContent=stats.gens;
+  q('st-creds').textContent=stats.creds;
+  const avgMs=stats.gens>0?Math.round(stats.totalMs/stats.gens):0;const avgS=Math.round(avgMs/1000);
+  q('st-time').textContent=avgS>0?(avgS>=60?Math.floor(avgS/60)+'m'+String(avgS%60).padStart(2,'0')+'s':avgS+'s'):'—';
+  const sessS=Math.round((Date.now()-stats.t0)/1000);
+  q('st-sess').textContent=sessS>=3600?Math.floor(sessS/3600)+'h'+Math.floor((sessS%3600)/60)+'m':sessS>=60?Math.floor(sessS/60)+'m':sessS+'s';
+}
 
 function clrP(){if(poll){clearInterval(poll);poll=null}}
 function setG(v){const b=q('gbtn');b.disabled=v;b.classList.toggle('ld',v);b.innerHTML=v?'<span class="spin">⟳</span> Génération en cours…':'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer'}
@@ -726,7 +949,7 @@ async function loadGLB(buf){
   if(gltf.meshes){gltf.meshes.forEach(m=>m.primitives.forEach(p=>{const g=new THREE.BufferGeometry();const lA=(acc,comp)=>{const a=gltf.accessors[acc],bv=gltf.bufferViews[a.bufferView];const off=bs+(bv.byteOffset||0)+(a.byteOffset||0);return new Float32Array(buf,off,a.count*comp).slice()};if(p.attributes.POSITION!==undefined)g.setAttribute('position',new THREE.BufferAttribute(lA(p.attributes.POSITION,3),3));if(p.attributes.NORMAL!==undefined)g.setAttribute('normal',new THREE.BufferAttribute(lA(p.attributes.NORMAL,3),3));if(p.attributes.TEXCOORD_0!==undefined)g.setAttribute('uv',new THREE.BufferAttribute(lA(p.attributes.TEXCOORD_0,2),2));if(p.indices!==undefined){const a=gltf.accessors[p.indices],bv=gltf.bufferViews[a.bufferView];const off=bs+(bv.byteOffset||0)+(a.byteOffset||0);const idx=a.componentType===5123?new Uint16Array(buf,off,a.count):new Uint32Array(buf,off,a.count);g.setIndex(new THREE.BufferAttribute(new Uint32Array(idx),1))}if(!g.attributes.normal)g.computeVertexNormals();let mat=new THREE.MeshStandardMaterial({roughness:.5,metalness:.05,color:0xffffff});if(p.material!==undefined&&gltf.materials){const gm=gltf.materials[p.material];if(gm.pbrMetallicRoughness){const pbr=gm.pbrMetallicRoughness;if(pbr.baseColorTexture){const tidx=pbr.baseColorTexture.index;const src=gltf.textures?.[tidx]?.source;if(src!==undefined&&texs[src]){mat.map=texs[src];mat.map.needsUpdate=true}}if(pbr.baseColorFactor){const c=pbr.baseColorFactor;mat.color.set('#'+[c[0],c[1],c[2]].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join(''))}if(pbr.metallicFactor!==undefined)mat.metalness=pbr.metallicFactor;if(pbr.roughnessFactor!==undefined)mat.roughness=pbr.roughnessFactor}}const mn=new THREE.Mesh(g,mat);mn.userData.om=mat.map;group.add(mn)}))}
   if(!group.children.length){phMesh();return}mesh=group;finM()}catch(e){phMesh()}
 }
-function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THREE.Vector3();box.getSize(sz);const sc=2.2/Math.max(sz.x,sz.y,sz.z);const center=new THREE.Vector3();box.getCenter(center);mesh.position.sub(center.multiplyScalar(sc));mesh.scale.setScalar(sc);scene.add(mesh);rx=ry=panX=panY=0}
+function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THREE.Vector3();box.getSize(sz);const sc=2.2/Math.max(sz.x,sz.y,sz.z);const center=new THREE.Vector3();box.getCenter(center);mesh.position.sub(center.multiplyScalar(sc));mesh.scale.setScalar(sc);mesh.userData.baseScale=sc;scene.add(mesh);rx=ry=panX=panY=0;modelScale=1;const sw=q('scale-wrap');if(sw)sw.style.display='flex';const sl=q('scale-sl');if(sl)sl.value=100;const ll=q('scale-lbl');if(ll)ll.textContent='100%'}
 function phMesh(){mesh=new THREE.Mesh(new THREE.TorusKnotGeometry(.55,.18,256,32),new THREE.MeshStandardMaterial({color:0xc8e83a,roughness:.1,metalness:.7}));scene.add(mesh)}
 
 /* ── MOBILE NAV ── */
@@ -783,6 +1006,9 @@ window.addEventListener('load',()=>{
   init3();
   initTouch();
   initMob();
+  initMatGrid();
+  loadStats();updateStats();
+  setInterval(updateStats,10000);
   const saved=localStorage.getItem('form3d_key');if(saved){q('akey').value=saved;ckK()}
   loadHist();updateCost();
 });
