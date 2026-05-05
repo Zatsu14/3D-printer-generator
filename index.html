@@ -240,23 +240,32 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .bk-sel{display:flex;gap:3px;background:var(--bg3);border-radius:8px;padding:3px;border:1px solid var(--b2)}
 .bk-btn{padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--t3);background:transparent;transition:all .15s;display:flex;align-items:center;gap:4px;white-space:nowrap}
 .bk-btn.on{background:var(--ac);color:#080809}
-.bk-btn.trl.on{background:var(--purple);color:#fff}
+.bk-btn.trl.on{background:var(--ac);color:#080809}
 .bk-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:background .3s}
 .bk-dot.ok{background:#4caf50}.bk-dot.err{background:var(--red)}
 /* ── TRELLIS OPTIONS ── */
 .tr-sec{display:none;flex-direction:column;gap:5px}
 .tr-sec.on{display:flex}
 .tr-res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.tr-res-card{padding:7px 4px;border-radius:8px;border:1.5px solid var(--b2);background:var(--bg3);cursor:pointer;transition:all .15s;text-align:center}
-.tr-res-card:hover{border-color:var(--b3)}.tr-res-card.on{border-color:var(--purple);background:rgba(176,110,243,.12)}
-.tr-res-name{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--t)}.tr-res-card.on .tr-res-name{color:var(--purple)}
+.tr-res-card,.tr-tex-card{padding:7px 4px;border-radius:8px;border:1.5px solid var(--b2);background:var(--bg3);cursor:pointer;transition:all .15s;text-align:center}
+.tr-res-card:hover,.tr-tex-card:hover{border-color:var(--b3)}
+.tr-res-card.on,.tr-tex-card.on{border-color:var(--ac);background:var(--ac3)}
+.tr-res-name,.tr-tex-name{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--t)}
+.tr-res-card.on .tr-res-name,.tr-tex-card.on .tr-tex-name{color:var(--ac)}
 .tr-res-sub{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:2px}
 .tr-sl-row{display:flex;align-items:center;gap:7px;padding:2px 0}
-.tr-sl-row label{font-family:var(--mono);font-size:11px;color:var(--t3);min-width:130px}
-.tr-sl-row input[type=range]{flex:1;accent-color:var(--purple);cursor:pointer}
-.tr-sl-val{font-family:var(--mono);font-size:11px;color:var(--t2);min-width:22px;text-align:right}
-.tr-link{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:8px;border:1px solid var(--purple);color:var(--purple);font-family:var(--mono);font-size:11px;text-decoration:none;transition:all .15s;cursor:pointer;background:none;width:100%}
-.tr-link:hover{background:rgba(176,110,243,.1)}
+.tr-sl-row label{font-family:var(--mono);font-size:11px;color:var(--t3);min-width:125px}
+.tr-sl-row input[type=range]{flex:1;accent-color:var(--ac);cursor:pointer}
+.tr-sl-val{font-family:var(--mono);font-size:11px;color:var(--t2);min-width:28px;text-align:right}
+.tr-link{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:8px;border:1px solid var(--ac);color:var(--ac);font-family:var(--mono);font-size:11px;text-decoration:none;transition:all .15s;cursor:pointer;background:none;width:100%}
+.tr-link:hover{background:var(--ac3)}
+/* ── HISTORY PREVIEW ── */
+.hi-prev{width:100%;height:110px;background:var(--bg2);border-bottom:1px solid var(--b2);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative}
+.hi-prev img{width:100%;height:100%;object-fit:contain}
+.hi-prev-empty{font-family:var(--mono);font-size:11px;color:var(--t3);text-align:center;line-height:1.8}
+.hi-prev-badge{position:absolute;bottom:5px;right:6px;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:100px;background:rgba(0,0,0,.75);color:var(--t2)}
+.hi-reload{position:absolute;top:5px;right:6px;background:var(--ac);border:none;border-radius:5px;padding:3px 7px;font-family:var(--mono);font-size:10px;color:#080809;cursor:pointer;font-weight:700;display:none}
+.hi-prev:hover .hi-reload{display:block}
 .tr-offline{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,8,9,.93);z-index:6}
 .tr-offline.on{display:flex}
 .tr-offline-box{padding:22px 24px;border-radius:13px;border:1.5px solid var(--red);background:var(--bg3);max-width:350px;font-family:var(--mono);font-size:12px;color:var(--t2);line-height:1.9}
@@ -402,17 +411,30 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     <div class="kh">Créer une clé → <a href="https://platform.tripo3d.ai" target="_blank">platform.tripo3d.ai</a></div>
   </div>
   <div class="sec tr-sec" id="tr-opts">
-    <div class="lbl">Résolution voxel</div>
+    <div class="lbl">Résolution 3D</div>
     <div class="tr-res-grid">
-      <div class="tr-res-card" onclick="setTrRes(512,this)"><div class="tr-res-name">512³</div><div class="tr-res-sub">Rapide</div></div>
-      <div class="tr-res-card on" onclick="setTrRes(1024,this)"><div class="tr-res-name">1024³</div><div class="tr-res-sub">Défaut</div></div>
-      <div class="tr-res-card" onclick="setTrRes(1536,this)"><div class="tr-res-name">1536³</div><div class="tr-res-sub">HD</div></div>
+      <div class="tr-res-card" onclick="setTrRes(512,this)"><div class="tr-res-name">512³</div><div class="tr-res-sub">Rapide ~30s</div></div>
+      <div class="tr-res-card on" onclick="setTrRes(1024,this)"><div class="tr-res-name">1024³</div><div class="tr-res-sub">Défaut ~2min</div></div>
+      <div class="tr-res-card" onclick="setTrRes(1536,this)"><div class="tr-res-name">1536³</div><div class="tr-res-sub">HD ~5min</div></div>
     </div>
-    <div class="lbl">Paramètres</div>
+    <div class="lbl">Limite de faces</div>
+    <div class="tr-sl-row">
+      <label>Face limit</label>
+      <input type="range" min="5" max="100" value="50" id="tr-face-sl" oninput="setTrFaceLimit(+this.value)">
+      <span class="tr-sl-val" id="tr-face-val">50k</span>
+    </div>
+    <div class="lbl">Résolution texture</div>
+    <div class="tr-res-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="tr-tex-card" onclick="setTrTexSize(512,this)"><div class="tr-tex-name">512</div></div>
+      <div class="tr-tex-card" onclick="setTrTexSize(1024,this)"><div class="tr-tex-name">1024</div></div>
+      <div class="tr-tex-card on" onclick="setTrTexSize(2048,this)"><div class="tr-tex-name">2048</div></div>
+      <div class="tr-tex-card" onclick="setTrTexSize(4096,this)"><div class="tr-tex-name">4096</div></div>
+    </div>
+    <div class="lbl">Diffusion</div>
     <div class="tr-sl-row">
       <label>Inference steps</label>
-      <input type="range" min="1" max="50" value="20" id="tr-steps-sl" oninput="q('tr-steps-val').textContent=this.value;trellisSteps=+this.value">
-      <span class="tr-sl-val" id="tr-steps-val">20</span>
+      <input type="range" min="1" max="50" value="12" id="tr-steps-sl" oninput="q('tr-steps-val').textContent=this.value;trellisSteps=+this.value">
+      <span class="tr-sl-val" id="tr-steps-val">12</span>
     </div>
     <div class="tr-sl-row">
       <label>Guidance scale</label>
@@ -423,8 +445,8 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
       <label>Seed (vide = aléatoire)</label>
       <input class="inp" type="number" id="tr-seed" placeholder="ex: 42" style="flex:1;padding:4px 8px;font-size:12px">
     </div>
-    <div class="toggle-row" style="margin-top:2px">
-      <div><div class="toggle-label" style="font-size:12px">Texture</div><div class="toggle-sub">Applique une texture PBR au mesh</div></div>
+    <div class="toggle-row">
+      <div><div class="toggle-label" style="font-size:12px">Texture PBR</div><div class="toggle-sub">Applique une texture sur le mesh</div></div>
       <label class="toggle"><input type="checkbox" id="tr-texture" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
     </div>
     <button class="tr-link" onclick="window.open('http://127.0.0.1:7960','_blank')">🔗 Ouvrir TRELLIS (127.0.0.1:7960)</button>
@@ -517,6 +539,12 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
   </div>
 
   <div class="r-pane on" id="rpane-hist">
+    <div class="hi-prev" id="hi-prev">
+      <img id="hi-prev-img" style="display:none;width:100%;height:100%;object-fit:contain">
+      <div class="hi-prev-empty" id="hi-prev-empty">Sélectionne une génération<br>pour voir l'aperçu</div>
+      <button class="hi-reload" id="hi-reload" onclick="reloadFromHist()">↺ Recharger</button>
+      <span class="hi-prev-badge" id="hi-prev-badge" style="display:none"></span>
+    </div>
     <div class="hist" id="hist"><div class="he">Aucune génération<br>Tes créations apparaîtront ici</div></div>
     <div class="r-footer"><button class="r-btn danger" onclick="clearHist()">Effacer l'historique</button></div>
   </div>
@@ -640,13 +668,14 @@ const MATS={
 /* ── TRELLIS ── */
 let backend='tripo'; // 'tripo'|'trellis'
 let trellisOk=false;
-let trellisRes=1024;     // 512 | 1024 | 1536
-let trellisSteps=20;     // num_inference_steps (1-50)
-let trellisGuidance=7.5; // guidance_scale (1-10)
-let trellisPoll=null;    // polling interval
+let trellisRes=1024;      // 512 | 1024 | 1536
+let trellisSteps=12;      // num_inference_steps (1-50), défaut API = 12
+let trellisGuidance=7.5;  // guidance_scale (1-10)
+let trellisTexSize=2048;  // texture_size (512/1024/2048/4096)
+let trellisFaceLimit=50;  // mesh_simplify int (5-100), ×1000 = faces
+let trellisPoll=null;
+let histSelIdx=-1;        // index de l'item historique sélectionné
 const TRELLIS_URL='http://127.0.0.1:7960';
-// resolution → pipeline_type mapping
-const TRELLIS_RES_MAP={512:'512',1024:'1024_cascade',1536:'1536_cascade'};
 
 const QCFG={
   turbo:{model:'Turbo-v1.0-20250506',geo:'standard',texQ:'standard',cost:{text:10,image:20,multi:20}},
@@ -810,7 +839,7 @@ function selectBatch(i){
   q('ex-bambu')?.classList.remove('dis');
   q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;q('bcmp').disabled=false;
   q('pp-bar').classList.add('on');q('hb').classList.add('on');
-  updH(r.taskId,'done',r.thumb||null);setStage('Prêt · '+quality.toUpperCase(),true);
+  updH(r.taskId,'done',r.thumb||null,r.glb||null);setStage('Prêt · '+quality.toUpperCase(),true);
   setTimeout(()=>{const key=q('akey').value.trim();if(key)fetchBalance(key);showSpecs(hist[0]);showFils()},1500);
 }
 
@@ -827,7 +856,7 @@ function pollT(key,id){
         setPg(100,'Modèle prêt ✓','TRIPO v3.1');setG(false);
         ['glb','stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'));
         q('ex-bambu')?.classList.remove('dis');
-        updH(id,'done',mUrls.thumb||null);
+        updH(id,'done',mUrls.thumb||null,mUrls.glb||null);
         setStage('Prêt · '+quality.toUpperCase(),true);
         q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;q('bcmp').disabled=false;
         q('hb').classList.add('on');q('pp-bar').classList.add('on');
@@ -927,9 +956,39 @@ const HIST_SAVE_KEY='form3d_hist_v2';
 function loadHist(){try{hist=JSON.parse(localStorage.getItem(HIST_SAVE_KEY)||'[]')}catch(e){hist=[]}rH()}
 function saveHist(){try{localStorage.setItem(HIST_SAVE_KEY,JSON.stringify(hist.slice(0,50)))}catch(e){}}
 function addH(item){item.date=new Date().toISOString();hist.unshift(item);saveHist();rH()}
-function updH(id,st,th){const h=hist.find(x=>x.id===id);if(h){h.status=st;if(th)h.thumb=th;saveHist();rH()}}
-function clearHist(){if(!confirm('Effacer tout l\'historique ?'))return;hist=[];saveHist();rH()}
-function selH(i){document.querySelectorAll('.hi').forEach((el,j)=>el.classList.toggle('on',j===i));const h=hist[i];if(h&&h.status==='done')showSpecs(h)}
+function updH(id,st,th,glbUrl){const h=hist.find(x=>x.id===id);if(h){h.status=st;if(th)h.thumb=th;if(glbUrl)h.glb=glbUrl;saveHist();rH()}}
+function clearHist(){if(!confirm('Effacer tout l\'historique ?'))return;hist=[];histSelIdx=-1;saveHist();rH();const img=q('hi-prev-img');if(img)img.style.display='none';const em=q('hi-prev-empty');if(em)em.style.display='block';const bd=q('hi-prev-badge');if(bd)bd.style.display='none'}
+function selH(i){
+  histSelIdx=i;
+  document.querySelectorAll('.hi').forEach((el,j)=>el.classList.toggle('on',j===i));
+  const h=hist[i];if(!h)return;
+  // Mise à jour du preview
+  const img=q('hi-prev-img'),em=q('hi-prev-empty'),bd=q('hi-prev-badge');
+  if(h.thumb){if(img){img.src=h.thumb;img.style.display='block'}if(em)em.style.display='none'}
+  else{if(img)img.style.display='none';if(em)em.style.display='block'}
+  if(bd){bd.textContent=(h.quality||'hd').toUpperCase()+' · '+(h.mode||'');bd.style.display='block'}
+  if(h.status==='done')showSpecs(h);
+  // Chargement du modèle 3D si URL stockée
+  if(h.glb&&h.status==='done')_loadHistModel(h);
+}
+function reloadFromHist(){if(histSelIdx>=0&&hist[histSelIdx])_loadHistModel(hist[histSelIdx])}
+async function _loadHistModel(h){
+  if(!h.glb)return;
+  if(!scene)init3();
+  q('cv').style.display='block';q('emp').style.display='none';
+  try{
+    await loadM(h.glb);
+    const isTrl=h.quality==='trellis';
+    mUrls={glb:h.glb,_taskId:h.id,_trellis:isTrl};ppTaskId=isTrl?null:h.id;
+    q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;q('hb').classList.add('on');
+    if(!isTrl)q('pp-bar')?.classList.add('on');
+    q('ex-glb')?.classList.remove('dis');q('ex-bambu')?.classList.remove('dis');
+    if(!isTrl)['stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'));
+    else['stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.add('dis'));
+    setStage('Prêt · '+(h.quality||'hd').toUpperCase(),true);
+    toast('✓ Modèle rechargé','ok');
+  }catch(e){toast('URL expirée — régénère le modèle',true)}
+}
 function rH(){const el=q('hist');if(!hist.length){el.innerHTML='<div class="he">Aucune génération<br>Tes créations apparaîtront ici</div>';return}el.innerHTML=hist.map((h,i)=>`<div class="hi ${i===0?'on':''}" onclick="selH(${i})"><div class="hiT">${h.thumb?`<img src="${h.thumb}"/>`:'⬡'}</div><div style="flex:1;min-width:0"><div class="hip">${(h.prompt||'').slice(0,22)}${(h.prompt||'').length>22?'…':''}</div><div class="him">${h.mode}·${h.quality||'hd'}·${h.date?new Date(h.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</div></div><div class="hid d${h.status==='done'?'ok':h.status==='error'?'er':'ld'}"></div></div>`).join('')}
 
 function showSpecs(h){
@@ -1137,6 +1196,8 @@ async function checkTrellis(){
 }
 
 function setTrRes(r,el){trellisRes=r;document.querySelectorAll('.tr-res-card').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
+function setTrTexSize(v,el){trellisTexSize=v;document.querySelectorAll('.tr-tex-card').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
+function setTrFaceLimit(v){trellisFaceLimit=v;const lbl=q('tr-face-val');if(lbl)lbl.textContent=(v<10?v+'k':v+'k')}
 
 async function retryTrellis(){
   q('tr-offline')?.classList.remove('on');
@@ -1189,10 +1250,10 @@ async function generateTrellis(){
     fd.append('seed',String(parseInt(q('tr-seed')?.value)||Math.floor(Math.random()*65535)));
     fd.append('guidance_scale',String(trellisGuidance));
     fd.append('num_inference_steps',String(trellisSteps));
-    fd.append('resolution',String(trellisRes)); // int : 512 | 1024 | 1536
-    fd.append('mesh_simplify','95');            // int 10-1000 (×1000 → decimation_target)
+    fd.append('resolution',String(trellisRes));          // int : 512 | 1024 | 1536
+    fd.append('mesh_simplify',String(trellisFaceLimit)); // int 5-100 (×1000 → faces)
     fd.append('apply_texture',q('tr-texture')?.checked?'true':'false');
-    fd.append('texture_size','2048');           // int, défaut serveur
+    fd.append('texture_size',String(trellisTexSize));    // int : 512/1024/2048/4096
     fd.append('tex_rescale_t','3.0');
     fd.append('tex_guidance_strength','1.0');
     fd.append('output_format','glb');
@@ -1242,7 +1303,7 @@ async function generateTrellis(){
     q('hb').classList.add('on');
     setStage('Prêt · TRELLIS',true);
     const p2=img.name||'Image TRELLIS';
-    addH({id:'trl_'+Date.now(),prompt:p2,mode,status:'done',quality:'trellis'});
+    addH({id:'trl_'+Date.now(),prompt:p2,mode,status:'done',quality:'trellis',glb:blobUrl});
     stats.gens++;stats.totalMs+=Date.now()-genStartTime;saveStats();updateStats();
     setTimeout(()=>{showSpecs(hist[0]);showFils()},500);
   }catch(e){
