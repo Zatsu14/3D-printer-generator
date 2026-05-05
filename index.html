@@ -410,20 +410,24 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     </div>
     <div class="lbl">Paramètres</div>
     <div class="tr-sl-row">
-      <label>Sparse steps</label>
-      <input type="range" min="1" max="50" value="20" id="tr-sp-sl" oninput="q('tr-sp-val').textContent=this.value;trellisSpSteps=+this.value">
-      <span class="tr-sl-val" id="tr-sp-val">20</span>
+      <label>Inference steps</label>
+      <input type="range" min="1" max="50" value="20" id="tr-steps-sl" oninput="q('tr-steps-val').textContent=this.value;trellisSteps=+this.value">
+      <span class="tr-sl-val" id="tr-steps-val">20</span>
     </div>
     <div class="tr-sl-row">
-      <label>Slat steps</label>
-      <input type="range" min="1" max="50" value="20" id="tr-slat-sl" oninput="q('tr-slat-val').textContent=this.value;trellisSlatSteps=+this.value">
-      <span class="tr-sl-val" id="tr-slat-val">20</span>
+      <label>Guidance scale</label>
+      <input type="range" min="1" max="10" step="0.5" value="7.5" id="tr-guid-sl" oninput="q('tr-guid-val').textContent=(+this.value).toFixed(1);trellisGuidance=+this.value">
+      <span class="tr-sl-val" id="tr-guid-val">7.5</span>
     </div>
     <div class="tr-sl-row">
       <label>Seed (vide = aléatoire)</label>
       <input class="inp" type="number" id="tr-seed" placeholder="ex: 42" style="flex:1;padding:4px 8px;font-size:12px">
     </div>
-    <button class="tr-link" onclick="window.open('http://localhost:7860','_blank')">🔗 Ouvrir TRELLIS (localhost:7860)</button>
+    <div class="toggle-row" style="margin-top:2px">
+      <div><div class="toggle-label" style="font-size:12px">Texture</div><div class="toggle-sub">Applique une texture PBR au mesh</div></div>
+      <label class="toggle"><input type="checkbox" id="tr-texture" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+    </div>
+    <button class="tr-link" onclick="window.open('http://127.0.0.1:7960','_blank')">🔗 Ouvrir TRELLIS (127.0.0.1:7960)</button>
   </div>
 
   <div class="gw">
@@ -636,10 +640,13 @@ const MATS={
 /* ── TRELLIS ── */
 let backend='tripo'; // 'tripo'|'trellis'
 let trellisOk=false;
-let trellisRes=1024;
-let trellisSpSteps=20;
-let trellisSlatSteps=20;
-const TRELLIS_URL='http://localhost:7860';
+let trellisRes=1024;     // 512 | 1024 | 1536
+let trellisSteps=20;     // num_inference_steps (1-50)
+let trellisGuidance=7.5; // guidance_scale (1-10)
+let trellisPoll=null;    // polling interval
+const TRELLIS_URL='http://127.0.0.1:7960';
+// resolution → pipeline_type mapping
+const TRELLIS_RES_MAP={512:'512',1024:'1024_cascade',1536:'1536_cascade'};
 
 const QCFG={
   turbo:{model:'Turbo-v1.0-20250506',geo:'standard',texQ:'standard',cost:{text:10,image:20,multi:20}},
@@ -901,7 +908,9 @@ async function doE(fmt){
   if(!mUrls.glb){toast('Génère d\'abord un modèle',true);return}
   if(backend==='trellis'){
     if(fmt!=='glb'){toast('Mode TRELLIS : GLB uniquement — STL/3MF requièrent Tripo',true);return}
-    const a=document.createElement('a');a.href=mUrls.glb;a.download='trellis_model.glb';a.click();toast('Export GLB lancé');return;
+    // mUrls.glb is a blob: URL created from the downloaded binary
+    const a=document.createElement('a');a.href=mUrls.glb;a.download='trellis_model.glb';document.body.appendChild(a);a.click();document.body.removeChild(a);
+    toast('Export GLB lancé');return;
   }
   const key=q('akey').value.trim();
   if(fmt==='glb'){const a=document.createElement('a');a.href=PROXY+'/model?url='+encodeURIComponent(mUrls.glb);a.download='bambu.glb';a.click();toast('Export GLB lancé');return}
@@ -1097,7 +1106,8 @@ function initTouch(){
 }
 
 /* ══════════════════════════════════════════════
-   TRELLIS LOCAL BACKEND
+   TRELLIS LOCAL BACKEND  — API REST FastAPI
+   POST /generate_no_preview → GET /status (polling) → GET /download/model
    ══════════════════════════════════════════════ */
 function setBackend(b){
   backend=b;
@@ -1109,10 +1119,8 @@ function setBackend(b){
   const gbtn=q('gbtn');if(gbtn)gbtn.innerHTML=b==='trellis'?
     '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer (TRELLIS)':
     '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer';
-  // Adapt export panel
   if(b==='trellis'){['stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.add('dis'))}
   else if(mUrls.glb){['stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'))}
-  // Enable Bambu button when model loaded
   const eb=q('ex-bambu');if(eb)eb.classList.toggle('dis',!mUrls.glb);
   if(b==='trellis'){checkTrellis();updateCost()}else updateCost();
 }
@@ -1120,9 +1128,11 @@ function setBackend(b){
 async function checkTrellis(){
   const dot=q('bk-dot');if(dot)dot.className='bk-dot';
   try{
-    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),4000);
-    await fetch(TRELLIS_URL+'/info',{signal:ctrl.signal});
-    clearTimeout(t);trellisOk=true;if(dot)dot.className='bk-dot ok';
+    const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),4000);
+    const r=await fetch(TRELLIS_URL+'/',{signal:ctrl.signal});
+    const d=await r.json();
+    trellisOk=d.status==='ready'||r.ok;
+    if(dot)dot.className='bk-dot'+(trellisOk?' ok':' err');
   }catch(e){trellisOk=false;if(dot)dot.className='bk-dot err'}
 }
 
@@ -1130,8 +1140,7 @@ function setTrRes(r,el){trellisRes=r;document.querySelectorAll('.tr-res-card').f
 
 async function retryTrellis(){
   q('tr-offline')?.classList.remove('on');
-  q('emp').style.display='flex';
-  q('cv').style.display='none';
+  q('emp').style.display='flex';q('cv').style.display='none';
   await checkTrellis();
   if(trellisOk)toast('✓ TRELLIS connecté !','ok');
   else{q('tr-offline')?.classList.add('on');q('emp').style.display='none'}
@@ -1139,51 +1148,18 @@ async function retryTrellis(){
 
 function openBambu(){
   if(!mUrls.glb){toast('Génère d\'abord un modèle',true);return}
-  window.location.href='bambu-studio://open?file='+encodeURIComponent(mUrls.glb);
-  setTimeout(()=>toast('Si Bambu Studio ne s\'ouvre pas, exporte le GLB d\'abord'),2000);
-}
-
-/* Gradio SSE polling — gère Gradio 3.x (onmessage) et 4.x (named events) */
-async function pollGradioSSE(url){
-  return new Promise((resolve,reject)=>{
-    const es=new EventSource(url);
-    let pct=22;
-    const progT=setInterval(()=>{pct=Math.min(87,pct+1.5);setPg(pct,'Génération 3D…','TRELLIS')},2800);
-    const done=(glbPath)=>{clearInterval(progT);es.close();if(!glbPath.startsWith('http'))glbPath=TRELLIS_URL+'/file='+glbPath;resolve(glbPath)};
-    const fail=(msg)=>{clearInterval(progT);es.close();reject(new Error(msg))};
-    const parseOutput=(data)=>{
-      const out=Array.isArray(data)?data:(data?.output?.data||data?.data||[]);
-      for(const item of out){
-        if(item&&typeof item==='object'){const p=item.path||item.url||item.value||'';if(p.includes('.glb')||p.includes('mesh')||p.includes('model'))return p}
-        if(typeof item==='string'&&(item.endsWith('.glb')||item.includes('/file/')))return item;
-      }
-      // fallback: first item
-      const f=out[0];return f?(typeof f==='object'?f.path||f.url||f.value:f):null;
-    };
-    // Gradio 4.x — named events
-    es.addEventListener('complete',e=>{try{const p=parseOutput(JSON.parse(e.data));if(p)done(p);else fail('GLB introuvable')}catch(err){fail(err.message)}});
-    es.addEventListener('error',e=>{if(es.readyState===EventSource.CLOSED)return;fail('Erreur connexion TRELLIS')});
-    // Gradio 3.x — generic onmessage
-    es.onmessage=e=>{
-      try{
-        const msg=JSON.parse(e.data);
-        if(msg.msg==='process_completed'){const p=parseOutput(msg);if(p)done(p);else fail('GLB introuvable')}
-        else if(msg.msg==='queue_full'){fail('File TRELLIS pleine — réessaie')}
-        else if(msg.msg==='progress'&&msg.progress_data?.[0]){
-          const pd=msg.progress_data[0];clearInterval(progT);
-          if(pd.length)setPg(22+(pd.index/pd.length)*65,pd.desc||'Génération…','TRELLIS');
-        }
-      }catch(err){}
-    };
-    setTimeout(()=>fail('Timeout TRELLIS (>10 min)'),600000);
-  });
+  // Try local file path for TRELLIS, URL for Tripo
+  const target=mUrls._trellisBlobUrl||mUrls.glb;
+  window.location.href='bambu-studio://open?file='+encodeURIComponent(target);
+  setTimeout(()=>toast('Si Bambu Studio ne s\'ouvre pas, télécharge d\'abord le GLB'),2000);
 }
 
 async function generateTrellis(){
   const imgArr=mode==='image'?imgs[1]:mode==='hybrid'?imgs[3]:imgs[1];
-  if(mode==='text'){toast('TRELLIS ne supporte pas le mode Texte — utilise le mode Image',true);return}
+  if(mode==='text'){toast('TRELLIS ne supporte que le mode Image',true);return}
   if(!imgArr.length){toast('Upload une image d\'abord',true);return}
   if(!scene)init3();
+  if(trellisPoll){clearInterval(trellisPoll);trellisPoll=null}
   clrP();setG(true);
   q('tr-offline')?.classList.remove('on');
   q('cv').style.display='block';q('emp').style.display='none';q('pp-bar')?.classList.remove('on');
@@ -1192,69 +1168,85 @@ async function generateTrellis(){
   genStartTime=Date.now();
   mUrls={};origUrl=null;origThumb=null;compareMode=false;
   q('cmp-overlay')?.classList.remove('on');q('bcmp').disabled=true;
-  setPg(0,'Connexion TRELLIS…','LOCAL');
+  setPg(0,'Connexion TRELLIS…','127.0.0.1:7960');
   try{
-    // 1. Ping
-    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),5000);
+    // 1. Ping GET /
+    const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),5000);
     let pingOk=false;
-    try{const r=await fetch(TRELLIS_URL+'/info',{signal:ctrl.signal});clearTimeout(t);pingOk=r.ok||r.status<500}catch(e){clearTimeout(t)}
+    try{
+      const pr=await fetch(TRELLIS_URL+'/',{signal:ctrl.signal});
+      const pd=await pr.json();
+      pingOk=pd.status==='ready'||pr.ok;
+    }catch(e){}
     if(!pingOk)throw new Error('TRELLIS_OFFLINE');
     if(q('bk-dot'))q('bk-dot').className='bk-dot ok';trellisOk=true;
-    // 2. Upload image
-    setPg(8,'Upload image…','TRELLIS');
+    // 2. Build multipart form — POST /generate_no_preview
+    setPg(10,'Envoi image…','TRELLIS API');
     const img=imgArr[0];
     const blob=await(await fetch(`data:${img.type||'image/jpeg'};base64,${img.b64}`)).blob();
-    const fd=new FormData();fd.append('files',blob,img.name||'image.jpg');
-    const upR=await fetch(TRELLIS_URL+'/upload',{method:'POST',body:fd});
-    if(!upR.ok)throw new Error('Upload image échoué (HTTP '+upR.status+')');
-    const upD=await upR.json();
-    const filePath=Array.isArray(upD)?(upD[0]?.path||upD[0]):upD?.path||upD;
-    setPg(16,'Lancement génération…','TRELLIS');
-    const seed=parseInt(q('tr-seed')?.value)||Math.floor(Math.random()*65535);
-    const sessionHash=Math.random().toString(36).slice(2,10);
-    // Shared params array: [image, seed, ss_guidance, ss_steps, slat_guidance, slat_steps, simplify, tex_size]
-    const params=[{path:filePath,orig_name:img.name||'image.jpg'},seed,7.5,trellisSpSteps,3.0,trellisSlatSteps,0.95,trellisRes];
-    // 3. Try Gradio 4.x /call/{api_name}
-    let glbUrl=null;
-    let tried4x=false;
-    const apiNames=['image_to_3d','run_pipeline','generate','predict'];
-    for(const apiName of apiNames){
-      try{
-        const jR=await fetch(`${TRELLIS_URL}/call/${apiName}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:params})});
-        if(!jR.ok)continue;
-        const jd=await jR.json();if(!jd.event_id)continue;
-        glbUrl=await pollGradioSSE(`${TRELLIS_URL}/call/${apiName}/${jd.event_id}`);
-        tried4x=true;break;
-      }catch(e){continue}
-    }
-    // 4. Fallback: Gradio 3.x /queue/join
-    if(!tried4x){
-      let fnIdx=1;
-      try{const infoR=await fetch(TRELLIS_URL+'/info');const infoD=await infoR.json();const ne=infoD.named_endpoints||{};const entry=Object.entries(ne).find(([k])=>k.includes('image_to_3d')||k.includes('pipeline')||k.includes('generate'));if(entry)fnIdx=entry[1]?.id??1}catch(e){}
-      const jR=await fetch(`${TRELLIS_URL}/queue/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:params,event_data:null,fn_index:fnIdx,session_hash:sessionHash})});
-      if(!jR.ok)throw new Error('API Gradio inaccessible (HTTP '+jR.status+')');
-      glbUrl=await pollGradioSSE(`${TRELLIS_URL}/queue/data?session_hash=${sessionHash}`);
-    }
-    if(!glbUrl)throw new Error('Pas de modèle GLB retourné');
-    // 5. Load GLB
-    setPg(93,'Chargement modèle…','TRELLIS');
-    mUrls={glb:glbUrl,_trellis:true};origUrl=glbUrl;
-    await loadM(glbUrl);
+    const fd=new FormData();
+    fd.append('file',blob,img.name||'image.jpg');
+    fd.append('seed',String(parseInt(q('tr-seed')?.value)||Math.floor(Math.random()*65535)));
+    fd.append('guidance_scale',String(trellisGuidance));
+    fd.append('num_inference_steps',String(trellisSteps));
+    fd.append('resolution',String(trellisRes)); // e.g. "1024" — server maps to pipeline_type
+    fd.append('mesh_simplify','0.95');
+    fd.append('apply_texture',q('tr-texture')?.checked?'true':'false');
+    fd.append('texture_size','1024');
+    fd.append('output_format','glb');
+    const genR=await fetch(TRELLIS_URL+'/generate_no_preview',{method:'POST',body:fd});
+    if(!genR.ok){const t=await genR.text();throw new Error('Génération refusée ('+genR.status+'): '+t.slice(0,60))}
+    const genD=await genR.json();
+    if(genD.status==='FAILED')throw new Error(genD.message||'Erreur génération');
+    setPg(20,'Génération en cours…','TRELLIS');
+    // 3. Poll GET /status every 2s
+    await new Promise((resolve,reject)=>{
+      trellisPoll=setInterval(async()=>{
+        try{
+          const sr=await fetch(TRELLIS_URL+'/status');
+          const sd=await sr.json();
+          const pct=Math.max(20,Math.min(90,20+sd.progress*0.7));
+          const lbl=sd.message||'Génération 3D…';
+          setPg(pct,lbl,'TRELLIS · '+trellisRes+'³');
+          if(sd.status==='COMPLETE'||sd.status==='PREVIEW_READY'){
+            clearInterval(trellisPoll);trellisPoll=null;resolve();
+          }else if(sd.status==='FAILED'){
+            clearInterval(trellisPoll);trellisPoll=null;
+            reject(new Error(sd.message||'TRELLIS a échoué'));
+          }
+        }catch(e){clearInterval(trellisPoll);trellisPoll=null;reject(e)}
+      },2000);
+      setTimeout(()=>{if(trellisPoll){clearInterval(trellisPoll);trellisPoll=null;reject(new Error('Timeout (>10 min)'))}},600000);
+    });
+    // 4. Download GLB from GET /download/model
+    setPg(93,'Téléchargement modèle…','TRELLIS');
+    const dlR=await fetch(TRELLIS_URL+'/download/model');
+    if(!dlR.ok)throw new Error('Téléchargement GLB échoué ('+dlR.status+')');
+    const glbBuf=await dlR.arrayBuffer();
+    // Create a blob URL for export/Bambu
+    const glbBlob=new Blob([glbBuf],{type:'model/gltf-binary'});
+    const blobUrl=URL.createObjectURL(glbBlob);
+    mUrls={glb:blobUrl,_trellis:true,_trellisBlobUrl:blobUrl};origUrl=blobUrl;
+    // 5. Load into Three.js viewer
+    if(mesh){scene.remove(mesh);mesh=null}
+    const dv=new DataView(glbBuf);
+    if(dv.getUint32(0,true)===0x46546C67)await loadGLB(glbBuf);else loadSTL(glbBuf);
     setPg(100,'Modèle prêt ✓','TRELLIS');setG(false);setTimeout(hidP,1500);
-    // Update UI
+    // 6. Update UI
     q('ex-glb')?.classList.remove('dis');
-    const eb=q('ex-bambu');if(eb)eb.classList.remove('dis');
+    q('ex-bambu')?.classList.remove('dis');
     ['stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.add('dis'));
     q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;
     q('hb').classList.add('on');
     setStage('Prêt · TRELLIS',true);
-    const p2=imgArr[0]?.name||'Image TRELLIS';
+    const p2=img.name||'Image TRELLIS';
     addH({id:'trl_'+Date.now(),prompt:p2,mode,status:'done',quality:'trellis'});
     stats.gens++;stats.totalMs+=Date.now()-genStartTime;saveStats();updateStats();
     setTimeout(()=>{showSpecs(hist[0]);showFils()},500);
   }catch(e){
+    if(trellisPoll){clearInterval(trellisPoll);trellisPoll=null}
     setG(false);hidP();
-    const offline=e.message==='TRELLIS_OFFLINE'||e.message.includes('Failed to fetch')||e.message.includes('NetworkError')||e.message.includes('abort');
+    const offline=e.message==='TRELLIS_OFFLINE'||e.message.includes('Failed to fetch')||e.message.includes('NetworkError')||e.message.includes('net::');
     if(offline){
       q('cv').style.display='none';q('emp').style.display='none';
       q('tr-offline')?.classList.add('on');
