@@ -259,6 +259,11 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .tr-sl-val{font-family:var(--mono);font-size:11px;color:var(--t2);min-width:28px;text-align:right}
 .tr-link{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:8px;border:1px solid var(--ac);color:var(--ac);font-family:var(--mono);font-size:11px;text-decoration:none;transition:all .15s;cursor:pointer;background:none;width:100%}
 .tr-link:hover{background:var(--ac3)}
+.tr-desc{font-family:var(--mono);font-size:10px;color:var(--t3);line-height:1.55;margin-top:-2px;margin-bottom:3px}
+.tr-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:9px;border:1.5px solid var(--b2);background:var(--bg3)}
+.tr-toggle-info{flex:1;min-width:0}
+.tr-toggle-lbl{font-size:12px;font-weight:600;color:var(--t)}
+.tr-toggle-sub{font-family:var(--mono);font-size:10px;color:var(--t2);margin-top:1px}
 /* ── HISTORY PREVIEW ── */
 .hi-prev{width:100%;height:110px;background:var(--bg2);border-bottom:1px solid var(--b2);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative}
 .hi-prev img{width:100%;height:100%;object-fit:contain}
@@ -411,44 +416,66 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     <div class="kh">Créer une clé → <a href="https://platform.tripo3d.ai" target="_blank">platform.tripo3d.ai</a></div>
   </div>
   <div class="sec tr-sec" id="tr-opts">
+
     <div class="lbl">Résolution 3D</div>
     <div class="tr-res-grid">
       <div class="tr-res-card" onclick="setTrRes(512,this)"><div class="tr-res-name">512³</div><div class="tr-res-sub">Rapide ~30s</div></div>
       <div class="tr-res-card on" onclick="setTrRes(1024,this)"><div class="tr-res-name">1024³</div><div class="tr-res-sub">Défaut ~2min</div></div>
       <div class="tr-res-card" onclick="setTrRes(1536,this)"><div class="tr-res-name">1536³</div><div class="tr-res-sub">HD ~5min</div></div>
     </div>
-    <div class="lbl">Limite de faces</div>
+
+    <div class="lbl">Géométrie</div>
     <div class="tr-sl-row">
       <label>Face limit</label>
       <input type="range" min="5" max="100" value="50" id="tr-face-sl" oninput="setTrFaceLimit(+this.value)">
       <span class="tr-sl-val" id="tr-face-val">50k</span>
     </div>
-    <div class="lbl">Résolution texture</div>
+    <div class="tr-desc">Nombre de polygones du mesh final (5k = léger, 100k = détaillé)</div>
+    <div class="tr-sl-row">
+      <label>Sparse structure steps</label>
+      <input type="range" min="1" max="50" value="20" id="tr-ss-sl" oninput="q('tr-ss-val').textContent=this.value;trellisSsSteps=+this.value">
+      <span class="tr-sl-val" id="tr-ss-val">20</span>
+    </div>
+    <div class="tr-desc">Étapes de diffusion pour la structure sparse 3D — plus = meilleure géométrie</div>
+    <div class="tr-sl-row">
+      <label>Slat steps</label>
+      <input type="range" min="1" max="50" value="20" id="tr-slat-sl" oninput="q('tr-slat-val').textContent=this.value;trellisSlatSteps=+this.value">
+      <span class="tr-sl-val" id="tr-slat-val">20</span>
+    </div>
+    <div class="tr-desc">Étapes de diffusion pour le SLAT — affecte la qualité de surface</div>
+
+    <div class="lbl">Texture</div>
     <div class="tr-res-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="tr-tex-card" onclick="setTrTexSize(512,this)"><div class="tr-tex-name">512</div></div>
       <div class="tr-tex-card" onclick="setTrTexSize(1024,this)"><div class="tr-tex-name">1024</div></div>
       <div class="tr-tex-card on" onclick="setTrTexSize(2048,this)"><div class="tr-tex-name">2048</div></div>
       <div class="tr-tex-card" onclick="setTrTexSize(4096,this)"><div class="tr-tex-name">4096</div></div>
     </div>
-    <div class="lbl">Diffusion</div>
-    <div class="tr-sl-row">
-      <label>Inference steps</label>
-      <input type="range" min="1" max="50" value="12" id="tr-steps-sl" oninput="q('tr-steps-val').textContent=this.value;trellisSteps=+this.value">
-      <span class="tr-sl-val" id="tr-steps-val">12</span>
+    <div class="tr-desc">Résolution de la carte de texture PBR en pixels</div>
+
+    <div class="lbl">Options</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div class="tr-toggle-row">
+        <div class="tr-toggle-info"><div class="tr-toggle-lbl">Texture PBR</div><div class="tr-toggle-sub">Applique une texture couleur sur le mesh</div></div>
+        <label class="toggle"><input type="checkbox" id="tr-texture" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="tr-toggle-row">
+        <div class="tr-toggle-info"><div class="tr-toggle-lbl">Remesh</div><div class="tr-toggle-sub">Optimise la topologie du mesh (recommandé)</div></div>
+        <label class="toggle"><input type="checkbox" id="tr-remesh" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="tr-toggle-row">
+        <div class="tr-toggle-info"><div class="tr-toggle-lbl">Watertight</div><div class="tr-toggle-sub">Ferme les trous — essentiel pour l'impression 3D</div></div>
+        <label class="toggle"><input type="checkbox" id="tr-watertight" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="tr-toggle-row">
+        <div class="tr-toggle-info"><div class="tr-toggle-lbl">Supprimer le fond</div><div class="tr-toggle-sub">Retire l'arrière-plan de l'image avant génération</div></div>
+        <label class="toggle"><input type="checkbox" id="tr-rembg"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
     </div>
-    <div class="tr-sl-row">
-      <label>Guidance scale</label>
-      <input type="range" min="1" max="10" step="0.5" value="7.5" id="tr-guid-sl" oninput="q('tr-guid-val').textContent=(+this.value).toFixed(1);trellisGuidance=+this.value">
-      <span class="tr-sl-val" id="tr-guid-val">7.5</span>
-    </div>
-    <div class="tr-sl-row">
-      <label>Seed (vide = aléatoire)</label>
-      <input class="inp" type="number" id="tr-seed" placeholder="ex: 42" style="flex:1;padding:4px 8px;font-size:12px">
-    </div>
-    <div class="toggle-row">
-      <div><div class="toggle-label" style="font-size:12px">Texture PBR</div><div class="toggle-sub">Applique une texture sur le mesh</div></div>
-      <label class="toggle"><input type="checkbox" id="tr-texture" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-    </div>
+
+    <div class="lbl">Seed</div>
+    <input class="inp" type="number" id="tr-seed" placeholder="Vide = aléatoire à chaque fois" style="font-size:12px">
+
     <button class="tr-link" onclick="window.open('http://127.0.0.1:7960','_blank')">🔗 Ouvrir TRELLIS (127.0.0.1:7960)</button>
   </div>
 
@@ -669,7 +696,8 @@ const MATS={
 let backend='tripo'; // 'tripo'|'trellis'
 let trellisOk=false;
 let trellisRes=1024;      // 512 | 1024 | 1536
-let trellisSteps=12;      // num_inference_steps (1-50), défaut API = 12
+let trellisSsSteps=20;    // ss_sampling_steps (1-50) — structure sparse
+let trellisSlatSteps=20;  // slat_sampling_steps (1-50) — surface SLAT
 let trellisGuidance=7.5;  // guidance_scale (1-10)
 let trellisTexSize=2048;  // texture_size (512/1024/2048/4096)
 let trellisFaceLimit=50;  // mesh_simplify int (5-100), ×1000 = faces
@@ -1249,9 +1277,14 @@ async function generateTrellis(){
     fd.append('file',blob,img.name||'image.jpg');
     fd.append('seed',String(parseInt(q('tr-seed')?.value)||Math.floor(Math.random()*65535)));
     fd.append('guidance_scale',String(trellisGuidance));
-    fd.append('num_inference_steps',String(trellisSteps));
+    fd.append('num_inference_steps',String(Math.round((trellisSsSteps+trellisSlatSteps)/2)));
+    fd.append('ss_sampling_steps',String(trellisSsSteps));
+    fd.append('slat_sampling_steps',String(trellisSlatSteps));
     fd.append('resolution',String(trellisRes));          // int : 512 | 1024 | 1536
     fd.append('mesh_simplify',String(trellisFaceLimit)); // int 5-100 (×1000 → faces)
+    fd.append('remesh',q('tr-remesh')?.checked?'true':'false');
+    fd.append('watertight',q('tr-watertight')?.checked?'true':'false');
+    fd.append('background_removal',q('tr-rembg')?.checked?'true':'false');
     fd.append('apply_texture',q('tr-texture')?.checked?'true':'false');
     fd.append('texture_size',String(trellisTexSize));    // int : 512/1024/2048/4096
     fd.append('tex_rescale_t','3.0');
