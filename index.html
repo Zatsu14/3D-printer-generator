@@ -236,6 +236,36 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .stat-reset{width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--b2);background:transparent;color:var(--t3);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s;margin-top:auto}
 .stat-reset:hover{border-color:var(--red);color:var(--red)}
 
+/* ── BACKEND SELECTOR ── */
+.bk-sel{display:flex;gap:3px;background:var(--bg3);border-radius:8px;padding:3px;border:1px solid var(--b2)}
+.bk-btn{padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--t3);background:transparent;transition:all .15s;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.bk-btn.on{background:var(--ac);color:#080809}
+.bk-btn.trl.on{background:var(--purple);color:#fff}
+.bk-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:background .3s}
+.bk-dot.ok{background:#4caf50}.bk-dot.err{background:var(--red)}
+/* ── TRELLIS OPTIONS ── */
+.tr-sec{display:none;flex-direction:column;gap:5px}
+.tr-sec.on{display:flex}
+.tr-res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.tr-res-card{padding:7px 4px;border-radius:8px;border:1.5px solid var(--b2);background:var(--bg3);cursor:pointer;transition:all .15s;text-align:center}
+.tr-res-card:hover{border-color:var(--b3)}.tr-res-card.on{border-color:var(--purple);background:rgba(176,110,243,.12)}
+.tr-res-name{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--t)}.tr-res-card.on .tr-res-name{color:var(--purple)}
+.tr-res-sub{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:2px}
+.tr-sl-row{display:flex;align-items:center;gap:7px;padding:2px 0}
+.tr-sl-row label{font-family:var(--mono);font-size:11px;color:var(--t3);min-width:130px}
+.tr-sl-row input[type=range]{flex:1;accent-color:var(--purple);cursor:pointer}
+.tr-sl-val{font-family:var(--mono);font-size:11px;color:var(--t2);min-width:22px;text-align:right}
+.tr-link{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:8px;border:1px solid var(--purple);color:var(--purple);font-family:var(--mono);font-size:11px;text-decoration:none;transition:all .15s;cursor:pointer;background:none;width:100%}
+.tr-link:hover{background:rgba(176,110,243,.1)}
+.tr-offline{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,8,9,.93);z-index:6}
+.tr-offline.on{display:flex}
+.tr-offline-box{padding:22px 24px;border-radius:13px;border:1.5px solid var(--red);background:var(--bg3);max-width:350px;font-family:var(--mono);font-size:12px;color:var(--t2);line-height:1.9}
+.tr-offline-box strong{color:var(--red);display:block;margin-bottom:8px;font-size:13px}
+.tr-offline-box code{background:var(--bg2);padding:2px 6px;border-radius:4px;font-size:11px;color:var(--t)}
+/* Hide Tripo-specific sections in TRELLIS mode */
+.trellis-mode .tripo-only{display:none!important}
+.trellis-mode .batch-row{display:none}
+.trellis-mode .cost-row{display:none}
 /* ── RESPONSIVE MOBILE ── */
 .mob-nav{display:none}
 @media(max-width:768px){
@@ -279,8 +309,11 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
   <div class="top-sep"></div>
   <span class="chip top-stage" id="stage-chip"><span class="chip-dot" id="stage-dot"></span><span id="stage-txt">—</span></span>
   <div class="top-right">
-    <span class="chip">TRIPO v3.1</span>
-    <div class="credit-chip"><div class="credit-dot"></div><span id="crd-val">— crédits</span></div>
+    <div class="bk-sel">
+      <button class="bk-btn on" id="bk-tripo" onclick="setBackend('tripo')">☁ Tripo3D</button>
+      <button class="bk-btn trl" id="bk-trellis" onclick="setBackend('trellis')"><span class="bk-dot" id="bk-dot"></span>TRELLIS Local</button>
+    </div>
+    <div class="credit-chip" id="crd-chip"><div class="credit-dot"></div><span id="crd-val">— crédits</span></div>
   </div>
 </div>
 
@@ -329,7 +362,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     </div>
   </div>
 
-  <div class="sec">
+  <div class="sec tripo-only">
     <div class="lbl">Qualité</div>
     <div class="q-grid">
       <div class="q-card" onclick="setQ(this,'turbo')"><div class="q-card-name">Turbo</div><div class="q-card-cr">~10 cr</div><div class="q-card-time">~15s</div></div>
@@ -338,7 +371,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     </div>
   </div>
 
-  <div class="sec grow">
+  <div class="sec grow tripo-only">
     <div class="lbl">Options</div>
     <div style="display:flex;flex-direction:column;gap:6px">
       <div class="toggle-row">
@@ -360,7 +393,7 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     </div>
   </div>
 
-  <div class="sec" style="flex-shrink:0">
+  <div class="sec tripo-only" style="flex-shrink:0">
     <div class="lbl">Clé API Tripo3D</div>
     <div class="key-row">
       <input class="inp" type="password" id="akey" placeholder="tsk_••••••••••••" style="flex:1" oninput="ckK()"/>
@@ -368,6 +401,31 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     </div>
     <div class="kh">Créer une clé → <a href="https://platform.tripo3d.ai" target="_blank">platform.tripo3d.ai</a></div>
   </div>
+  <div class="sec tr-sec" id="tr-opts">
+    <div class="lbl">Résolution voxel</div>
+    <div class="tr-res-grid">
+      <div class="tr-res-card" onclick="setTrRes(512,this)"><div class="tr-res-name">512³</div><div class="tr-res-sub">Rapide</div></div>
+      <div class="tr-res-card on" onclick="setTrRes(1024,this)"><div class="tr-res-name">1024³</div><div class="tr-res-sub">Défaut</div></div>
+      <div class="tr-res-card" onclick="setTrRes(1536,this)"><div class="tr-res-name">1536³</div><div class="tr-res-sub">HD</div></div>
+    </div>
+    <div class="lbl">Paramètres</div>
+    <div class="tr-sl-row">
+      <label>Sparse steps</label>
+      <input type="range" min="1" max="50" value="20" id="tr-sp-sl" oninput="q('tr-sp-val').textContent=this.value;trellisSpSteps=+this.value">
+      <span class="tr-sl-val" id="tr-sp-val">20</span>
+    </div>
+    <div class="tr-sl-row">
+      <label>Slat steps</label>
+      <input type="range" min="1" max="50" value="20" id="tr-slat-sl" oninput="q('tr-slat-val').textContent=this.value;trellisSlatSteps=+this.value">
+      <span class="tr-sl-val" id="tr-slat-val">20</span>
+    </div>
+    <div class="tr-sl-row">
+      <label>Seed (vide = aléatoire)</label>
+      <input class="inp" type="number" id="tr-seed" placeholder="ex: 42" style="flex:1;padding:4px 8px;font-size:12px">
+    </div>
+    <button class="tr-link" onclick="window.open('http://localhost:7860','_blank')">🔗 Ouvrir TRELLIS (localhost:7860)</button>
+  </div>
+
   <div class="gw">
     <div class="batch-row"><span class="batch-lbl">Variantes en parallèle</span><div class="batch-btns"><button class="batch-btn on" onclick="setBatch(1,this)">×1</button><button class="batch-btn" onclick="setBatch(2,this)">×2</button><button class="batch-btn" onclick="setBatch(3,this)">×3</button></div></div>
     <div class="batch-tray" id="batch-tray"></div>
@@ -418,6 +476,16 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
       <div class="psb" id="psb">TRIPO v3.1</div>
     </div>
     <div class="hb" id="hb">clic gauche · pivoter &nbsp;·&nbsp; clic droit · déplacer &nbsp;·&nbsp; scroll · zoomer</div>
+    <div class="tr-offline" id="tr-offline">
+      <div class="tr-offline-box">
+        <strong>⚠ TRELLIS hors ligne</strong>
+        Démarre TRELLIS localement :<br>
+        <code>python app.py</code><br>
+        dans le dossier <code>trellis-stable-projectorz</code><br><br>
+        Vérifie sur <a href="http://localhost:7860" target="_blank" style="color:var(--purple)">localhost:7860</a> qu'il tourne, puis :<br><br>
+        <button class="tr-link" onclick="retryTrellis()">↻ Réessayer</button>
+      </div>
+    </div>
   </div>
   <div class="pp-bar" id="pp-bar">
     <div class="pp-lbl">Post-processing — applique sur le modèle généré</div>
@@ -488,6 +556,8 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
       <div class="ec dis" id="ex-3mf" onclick="doE('3MF')"><div class="ei" style="background:rgba(79,195,247,.12);color:var(--blue)">3MF</div><div><div class="en2">3MF</div><div class="ed2">Bambu AMS multi-couleur</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="ec dis" id="ex-fbx" onclick="doE('FBX')"><div class="ei" style="background:rgba(176,110,243,.12);color:var(--purple)">FBX</div><div><div class="en2">FBX</div><div class="ed2">Blender · Maya · 3dsMax</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="ec dis" id="ex-obj" onclick="doE('OBJ')"><div class="ei" style="background:rgba(245,166,35,.12);color:var(--orange)">OBJ</div><div><div class="en2">OBJ</div><div class="ed2">Format universel</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div style="height:1px;background:var(--b);margin:8px 0"></div>
+      <div class="ec dis" id="ex-bambu" onclick="openBambu()"><div class="ei" style="background:rgba(118,185,0,.12);color:var(--ac)">🎯</div><div><div class="en2">Bambu Studio</div><div class="ed2">Ouvrir via bambu-studio://</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
   </div>
 </div>
@@ -563,6 +633,14 @@ const MATS={
   ASA:{density:1.07,label:'ASA'},
 };
 
+/* ── TRELLIS ── */
+let backend='tripo'; // 'tripo'|'trellis'
+let trellisOk=false;
+let trellisRes=1024;
+let trellisSpSteps=20;
+let trellisSlatSteps=20;
+const TRELLIS_URL='http://localhost:7860';
+
 const QCFG={
   turbo:{model:'Turbo-v1.0-20250506',geo:'standard',texQ:'standard',cost:{text:10,image:20,multi:20}},
   standard:{model:'v3.1-20260211',geo:'standard',texQ:'standard',cost:{text:20,image:30,multi:30}},
@@ -572,7 +650,10 @@ const QCFG={
 function setQ(el,q2){quality=q2;document.querySelectorAll('.q-card').forEach(c=>c.classList.remove('on'));el.classList.add('on');updateCost()}
 function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));['text','image','multiview','hybrid'].forEach(p=>{const el=q('pane-'+p);if(el)el.classList.toggle('on',p===m)});updateCost()}
 function setRTab(t){document.querySelectorAll('.r-tab').forEach(el=>el.classList.toggle('on',el.dataset.rt===t));document.querySelectorAll('.r-pane').forEach(el=>el.classList.toggle('on',el.id==='rpane-'+t))}
-function updateCost(){const cfg=QCFG[quality];const k=mode==='text'?'text':mode==='multiview'?'multi':'image';let cr=cfg.cost[k];if(quality==='hd')cr+=20;const tot=cr*batchN;q('cost-val').textContent='~'+tot+' crédits'+(batchN>1?' (×'+batchN+')':'')}
+function updateCost(){
+  if(backend==='trellis'){const cv=q('cost-val');if(cv)cv.textContent='Gratuit (local)';return}
+  const cfg=QCFG[quality];const k=mode==='text'?'text':mode==='multiview'?'multi':'image';let cr=cfg.cost[k];if(quality==='hd')cr+=20;const tot=cr*batchN;q('cost-val').textContent='~'+tot+' crédits'+(batchN>1?' (×'+batchN+')':'');
+}
 
 function ckK(){const v=q('akey').value.trim();q('kok').classList.toggle('on',v.startsWith('tsk_'));if(v)localStorage.setItem('form3d_key',v);if(v.startsWith('tsk_'))fetchBalance(v)}
 async function fetchBalance(key){try{const r=await fetch(PROXY+'/user/balance',{headers:{'Authorization':'Bearer '+key}});const d=await r.json();if(d.code===0)q('crd-val').textContent=Math.round(d.data.balance)+' crédits'}catch(e){}}
@@ -633,6 +714,7 @@ async function buildBody(key,cfg){
 }
 
 async function generate(){
+  if(backend==='trellis'){generateTrellis();return}
   const key=q('akey').value.trim();if(!key){toast('Clé API manquante',true);return}
   const p=mode==='hybrid'?q('prompt2').value.trim():q('prompt').value.trim();
   const imgArr=mode==='hybrid'?imgs[3]:mode==='image'?imgs[1]:imgs[2];
@@ -718,6 +800,7 @@ function selectBatch(i){
   origUrl=r.glb;origThumb=r.thumb||null;
   if(r.glb)loadM(r.glb);
   ['glb','stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'));
+  q('ex-bambu')?.classList.remove('dis');
   q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;q('bcmp').disabled=false;
   q('pp-bar').classList.add('on');q('hb').classList.add('on');
   updH(r.taskId,'done',r.thumb||null);setStage('Prêt · '+quality.toUpperCase(),true);
@@ -736,6 +819,7 @@ function pollT(key,id){
         ppTaskId=id;origUrl=mUrls.glb;origThumb=mUrls.thumb||null;
         setPg(100,'Modèle prêt ✓','TRIPO v3.1');setG(false);
         ['glb','stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'));
+        q('ex-bambu')?.classList.remove('dis');
         updH(id,'done',mUrls.thumb||null);
         setStage('Prêt · '+quality.toUpperCase(),true);
         q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;q('bcmp').disabled=false;
@@ -814,7 +898,12 @@ async function doAnimate(){
 async function waitTask(key,id){return new Promise((res,rej)=>{const pint=setInterval(async()=>{try{const r=await fetch(PROXY+'/task/'+id,{headers:{'Authorization':'Bearer '+key}});const d=await r.json();if(d.data?.status==='success'){clearInterval(pint);res(d.data)}else if(['failed','cancelled'].includes(d.data?.status)){clearInterval(pint);rej(new Error('Tâche échouée'))}}catch(e){clearInterval(pint);rej(e)}},3000)})}
 
 async function doE(fmt){
-  const key=q('akey').value.trim();if(!mUrls.glb){toast('Génère d\'abord un modèle',true);return}
+  if(!mUrls.glb){toast('Génère d\'abord un modèle',true);return}
+  if(backend==='trellis'){
+    if(fmt!=='glb'){toast('Mode TRELLIS : GLB uniquement — STL/3MF requièrent Tripo',true);return}
+    const a=document.createElement('a');a.href=mUrls.glb;a.download='trellis_model.glb';a.click();toast('Export GLB lancé');return;
+  }
+  const key=q('akey').value.trim();
   if(fmt==='glb'){const a=document.createElement('a');a.href=PROXY+'/model?url='+encodeURIComponent(mUrls.glb);a.download='bambu.glb';a.click();toast('Export GLB lancé');return}
   toast('Conversion '+fmt+'…');
   const flat=q('opt-flat').checked;
@@ -940,7 +1029,12 @@ function init3(){
 
 async function loadM(url){
   if(mesh){scene.remove(mesh);mesh=null}
-  try{let resp=await fetch(PROXY+'/model?url='+encodeURIComponent(url));if(!resp.ok)resp=await fetch(url);const buf=await resp.arrayBuffer();const v=new DataView(buf);if(v.getUint32(0,true)===0x46546C67)await loadGLB(buf);else loadSTL(buf)}catch(e){console.error('loadM:',e);phMesh()}
+  const isLocal=url.startsWith('http://localhost')||url.startsWith('http://127.0.0.1')||url.startsWith('blob:');
+  try{
+    let resp;
+    if(isLocal){resp=await fetch(url)}else{resp=await fetch(PROXY+'/model?url='+encodeURIComponent(url));if(!resp.ok)resp=await fetch(url)}
+    const buf=await resp.arrayBuffer();const v=new DataView(buf);if(v.getUint32(0,true)===0x46546C67)await loadGLB(buf);else loadSTL(buf)
+  }catch(e){console.error('loadM:',e);phMesh()}
 }
 function loadSTL(buf){try{const v=new DataView(buf),n=v.getUint32(80,true);const pos=new Float32Array(n*9);let off=84,pi=0;for(let i=0;i<n;i++){off+=12;for(let j=0;j<3;j++){pos[pi++]=v.getFloat32(off,true);pos[pi++]=v.getFloat32(off+4,true);pos[pi++]=v.getFloat32(off+8,true);off+=12}off+=2}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.computeVertexNormals();mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0xc0c0c8,roughness:.45,metalness:.1}));finM()}catch(e){phMesh()}}
 async function loadGLB(buf){
@@ -1000,6 +1094,173 @@ function initTouch(){
     }
   },{passive:false});
   cv2.addEventListener('touchend',e=>{drag=false;t0=null;t1=null});
+}
+
+/* ══════════════════════════════════════════════
+   TRELLIS LOCAL BACKEND
+   ══════════════════════════════════════════════ */
+function setBackend(b){
+  backend=b;
+  document.body.classList.toggle('trellis-mode',b==='trellis');
+  q('bk-tripo').classList.toggle('on',b==='tripo');
+  q('bk-trellis').classList.toggle('on',b==='trellis');
+  const trOpts=q('tr-opts');if(trOpts)trOpts.classList.toggle('on',b==='trellis');
+  const crdChip=q('crd-chip');if(crdChip)crdChip.style.display=b==='tripo'?'':'none';
+  const gbtn=q('gbtn');if(gbtn)gbtn.innerHTML=b==='trellis'?
+    '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer (TRELLIS)':
+    '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer';
+  // Adapt export panel
+  if(b==='trellis'){['stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.add('dis'))}
+  else if(mUrls.glb){['stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'))}
+  // Enable Bambu button when model loaded
+  const eb=q('ex-bambu');if(eb)eb.classList.toggle('dis',!mUrls.glb);
+  if(b==='trellis'){checkTrellis();updateCost()}else updateCost();
+}
+
+async function checkTrellis(){
+  const dot=q('bk-dot');if(dot)dot.className='bk-dot';
+  try{
+    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),4000);
+    await fetch(TRELLIS_URL+'/info',{signal:ctrl.signal});
+    clearTimeout(t);trellisOk=true;if(dot)dot.className='bk-dot ok';
+  }catch(e){trellisOk=false;if(dot)dot.className='bk-dot err'}
+}
+
+function setTrRes(r,el){trellisRes=r;document.querySelectorAll('.tr-res-card').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
+
+async function retryTrellis(){
+  q('tr-offline')?.classList.remove('on');
+  q('emp').style.display='flex';
+  q('cv').style.display='none';
+  await checkTrellis();
+  if(trellisOk)toast('✓ TRELLIS connecté !','ok');
+  else{q('tr-offline')?.classList.add('on');q('emp').style.display='none'}
+}
+
+function openBambu(){
+  if(!mUrls.glb){toast('Génère d\'abord un modèle',true);return}
+  window.location.href='bambu-studio://open?file='+encodeURIComponent(mUrls.glb);
+  setTimeout(()=>toast('Si Bambu Studio ne s\'ouvre pas, exporte le GLB d\'abord'),2000);
+}
+
+/* Gradio SSE polling — gère Gradio 3.x (onmessage) et 4.x (named events) */
+async function pollGradioSSE(url){
+  return new Promise((resolve,reject)=>{
+    const es=new EventSource(url);
+    let pct=22;
+    const progT=setInterval(()=>{pct=Math.min(87,pct+1.5);setPg(pct,'Génération 3D…','TRELLIS')},2800);
+    const done=(glbPath)=>{clearInterval(progT);es.close();if(!glbPath.startsWith('http'))glbPath=TRELLIS_URL+'/file='+glbPath;resolve(glbPath)};
+    const fail=(msg)=>{clearInterval(progT);es.close();reject(new Error(msg))};
+    const parseOutput=(data)=>{
+      const out=Array.isArray(data)?data:(data?.output?.data||data?.data||[]);
+      for(const item of out){
+        if(item&&typeof item==='object'){const p=item.path||item.url||item.value||'';if(p.includes('.glb')||p.includes('mesh')||p.includes('model'))return p}
+        if(typeof item==='string'&&(item.endsWith('.glb')||item.includes('/file/')))return item;
+      }
+      // fallback: first item
+      const f=out[0];return f?(typeof f==='object'?f.path||f.url||f.value:f):null;
+    };
+    // Gradio 4.x — named events
+    es.addEventListener('complete',e=>{try{const p=parseOutput(JSON.parse(e.data));if(p)done(p);else fail('GLB introuvable')}catch(err){fail(err.message)}});
+    es.addEventListener('error',e=>{if(es.readyState===EventSource.CLOSED)return;fail('Erreur connexion TRELLIS')});
+    // Gradio 3.x — generic onmessage
+    es.onmessage=e=>{
+      try{
+        const msg=JSON.parse(e.data);
+        if(msg.msg==='process_completed'){const p=parseOutput(msg);if(p)done(p);else fail('GLB introuvable')}
+        else if(msg.msg==='queue_full'){fail('File TRELLIS pleine — réessaie')}
+        else if(msg.msg==='progress'&&msg.progress_data?.[0]){
+          const pd=msg.progress_data[0];clearInterval(progT);
+          if(pd.length)setPg(22+(pd.index/pd.length)*65,pd.desc||'Génération…','TRELLIS');
+        }
+      }catch(err){}
+    };
+    setTimeout(()=>fail('Timeout TRELLIS (>10 min)'),600000);
+  });
+}
+
+async function generateTrellis(){
+  const imgArr=mode==='image'?imgs[1]:mode==='hybrid'?imgs[3]:imgs[1];
+  if(mode==='text'){toast('TRELLIS ne supporte pas le mode Texte — utilise le mode Image',true);return}
+  if(!imgArr.length){toast('Upload une image d\'abord',true);return}
+  if(!scene)init3();
+  clrP();setG(true);
+  q('tr-offline')?.classList.remove('on');
+  q('cv').style.display='block';q('emp').style.display='none';q('pp-bar')?.classList.remove('on');
+  if(mesh){scene.remove(mesh);mesh=null}
+  document.querySelectorAll('.pp-btn').forEach(b=>b.classList.remove('pp-done','pp-loading'));
+  genStartTime=Date.now();
+  mUrls={};origUrl=null;origThumb=null;compareMode=false;
+  q('cmp-overlay')?.classList.remove('on');q('bcmp').disabled=true;
+  setPg(0,'Connexion TRELLIS…','LOCAL');
+  try{
+    // 1. Ping
+    const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),5000);
+    let pingOk=false;
+    try{const r=await fetch(TRELLIS_URL+'/info',{signal:ctrl.signal});clearTimeout(t);pingOk=r.ok||r.status<500}catch(e){clearTimeout(t)}
+    if(!pingOk)throw new Error('TRELLIS_OFFLINE');
+    if(q('bk-dot'))q('bk-dot').className='bk-dot ok';trellisOk=true;
+    // 2. Upload image
+    setPg(8,'Upload image…','TRELLIS');
+    const img=imgArr[0];
+    const blob=await(await fetch(`data:${img.type||'image/jpeg'};base64,${img.b64}`)).blob();
+    const fd=new FormData();fd.append('files',blob,img.name||'image.jpg');
+    const upR=await fetch(TRELLIS_URL+'/upload',{method:'POST',body:fd});
+    if(!upR.ok)throw new Error('Upload image échoué (HTTP '+upR.status+')');
+    const upD=await upR.json();
+    const filePath=Array.isArray(upD)?(upD[0]?.path||upD[0]):upD?.path||upD;
+    setPg(16,'Lancement génération…','TRELLIS');
+    const seed=parseInt(q('tr-seed')?.value)||Math.floor(Math.random()*65535);
+    const sessionHash=Math.random().toString(36).slice(2,10);
+    // Shared params array: [image, seed, ss_guidance, ss_steps, slat_guidance, slat_steps, simplify, tex_size]
+    const params=[{path:filePath,orig_name:img.name||'image.jpg'},seed,7.5,trellisSpSteps,3.0,trellisSlatSteps,0.95,trellisRes];
+    // 3. Try Gradio 4.x /call/{api_name}
+    let glbUrl=null;
+    let tried4x=false;
+    const apiNames=['image_to_3d','run_pipeline','generate','predict'];
+    for(const apiName of apiNames){
+      try{
+        const jR=await fetch(`${TRELLIS_URL}/call/${apiName}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:params})});
+        if(!jR.ok)continue;
+        const jd=await jR.json();if(!jd.event_id)continue;
+        glbUrl=await pollGradioSSE(`${TRELLIS_URL}/call/${apiName}/${jd.event_id}`);
+        tried4x=true;break;
+      }catch(e){continue}
+    }
+    // 4. Fallback: Gradio 3.x /queue/join
+    if(!tried4x){
+      let fnIdx=1;
+      try{const infoR=await fetch(TRELLIS_URL+'/info');const infoD=await infoR.json();const ne=infoD.named_endpoints||{};const entry=Object.entries(ne).find(([k])=>k.includes('image_to_3d')||k.includes('pipeline')||k.includes('generate'));if(entry)fnIdx=entry[1]?.id??1}catch(e){}
+      const jR=await fetch(`${TRELLIS_URL}/queue/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:params,event_data:null,fn_index:fnIdx,session_hash:sessionHash})});
+      if(!jR.ok)throw new Error('API Gradio inaccessible (HTTP '+jR.status+')');
+      glbUrl=await pollGradioSSE(`${TRELLIS_URL}/queue/data?session_hash=${sessionHash}`);
+    }
+    if(!glbUrl)throw new Error('Pas de modèle GLB retourné');
+    // 5. Load GLB
+    setPg(93,'Chargement modèle…','TRELLIS');
+    mUrls={glb:glbUrl,_trellis:true};origUrl=glbUrl;
+    await loadM(glbUrl);
+    setPg(100,'Modèle prêt ✓','TRELLIS');setG(false);setTimeout(hidP,1500);
+    // Update UI
+    q('ex-glb')?.classList.remove('dis');
+    const eb=q('ex-bambu');if(eb)eb.classList.remove('dis');
+    ['stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.add('dis'));
+    q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;
+    q('hb').classList.add('on');
+    setStage('Prêt · TRELLIS',true);
+    const p2=imgArr[0]?.name||'Image TRELLIS';
+    addH({id:'trl_'+Date.now(),prompt:p2,mode,status:'done',quality:'trellis'});
+    stats.gens++;stats.totalMs+=Date.now()-genStartTime;saveStats();updateStats();
+    setTimeout(()=>{showSpecs(hist[0]);showFils()},500);
+  }catch(e){
+    setG(false);hidP();
+    const offline=e.message==='TRELLIS_OFFLINE'||e.message.includes('Failed to fetch')||e.message.includes('NetworkError')||e.message.includes('abort');
+    if(offline){
+      q('cv').style.display='none';q('emp').style.display='none';
+      q('tr-offline')?.classList.add('on');
+      trellisOk=false;const dot=q('bk-dot');if(dot)dot.className='bk-dot err';
+    }else{toast('TRELLIS : '+e.message.slice(0,70),true)}
+  }
 }
 
 window.addEventListener('load',()=>{
