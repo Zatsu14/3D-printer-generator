@@ -1189,10 +1189,12 @@ async function generateTrellis(){
     fd.append('seed',String(parseInt(q('tr-seed')?.value)||Math.floor(Math.random()*65535)));
     fd.append('guidance_scale',String(trellisGuidance));
     fd.append('num_inference_steps',String(trellisSteps));
-    fd.append('resolution',String(trellisRes)); // e.g. "1024" — server maps to pipeline_type
-    fd.append('mesh_simplify','0.95');
+    fd.append('resolution',String(trellisRes)); // int : 512 | 1024 | 1536
+    fd.append('mesh_simplify','95');            // int 10-1000 (×1000 → decimation_target)
     fd.append('apply_texture',q('tr-texture')?.checked?'true':'false');
-    fd.append('texture_size','1024');
+    fd.append('texture_size','2048');           // int, défaut serveur
+    fd.append('tex_rescale_t','3.0');
+    fd.append('tex_guidance_strength','1.0');
     fd.append('output_format','glb');
     const genR=await fetch(TRELLIS_URL+'/generate_no_preview',{method:'POST',body:fd});
     if(!genR.ok){const t=await genR.text();throw new Error('Génération refusée ('+genR.status+'): '+t.slice(0,60))}
