@@ -89,6 +89,9 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
 .gb:active:not(:disabled){transform:none;box-shadow:none}
 .gb:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .gb.ld{background:var(--bg3);color:var(--t2);border:1.5px solid var(--b2);box-shadow:none}
+.gb-stop{width:100%;padding:11px;border-radius:12px;background:#c0392b;border:none;cursor:pointer;font-family:var(--dis);font-size:14px;font-weight:700;color:#fff;display:none;align-items:center;justify-content:center;gap:7px;transition:all .2s;margin-top:6px}
+.gb-stop:hover{background:#e74c3c;transform:translateY(-1px);box-shadow:0 4px 16px rgba(192,57,43,.4)}
+.gb-stop.on{display:flex}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{display:inline-block;animation:spin .7s linear infinite}
 .C{background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
@@ -486,6 +489,9 @@ html,body{background:var(--bg);overflow:hidden;height:100%;font-family:var(--dis
     <button class="gb" id="gbtn" onclick="generate()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>Générer
     </button>
+    <button class="gb-stop" id="stop-btn" onclick="stopTrellis()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>Arrêter la génération
+    </button>
   </div>
 </div>
 
@@ -702,6 +708,7 @@ let trellisGuidance=7.5;  // guidance_scale (1-10)
 let trellisTexSize=2048;  // texture_size (512/1024/2048/4096)
 let trellisFaceLimit=50;  // mesh_simplify int (5-100), ×1000 = faces
 let trellisPoll=null;
+let trellisAbortCtrl=null;
 let histSelIdx=-1;        // index de l'item historique sélectionné
 const TRELLIS_URL='http://127.0.0.1:7960';
 
@@ -1091,7 +1098,14 @@ function updateStats(){
 }
 
 function clrP(){if(poll){clearInterval(poll);poll=null}}
-function setG(v){const b=q('gbtn');b.disabled=v;b.classList.toggle('ld',v);b.innerHTML=v?'<span class="spin">⟳</span> Génération en cours…':'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer'}
+function setG(v){const b=q('gbtn');b.disabled=v;b.classList.toggle('ld',v);b.innerHTML=v?'<span class="spin">⟳</span> Génération en cours…':'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Générer';const sb=q('stop-btn');if(sb)sb.classList.toggle('on',v&&backend==='trellis')}
+function stopTrellis(){
+  if(trellisAbortCtrl){trellisAbortCtrl.abort();trellisAbortCtrl=null}
+  if(trellisPoll){clearInterval(trellisPoll);trellisPoll=null}
+  const sb=q('stop-btn');if(sb)sb.classList.remove('on');
+  setG(false);hidP();
+  toast('⏹ Génération annulée');
+}
 function setPg(p,lbl,sub){q('pov').classList.add('on');q('emp').style.display='none';const c=2*Math.PI*30,off=c-(p/100)*c;q('rfl').style.strokeDashoffset=off;q('rpct').textContent=Math.round(p)+'%';q('plb').textContent=lbl;if(sub)q('psb').textContent=sub}
 function hidP(){q('pov').classList.remove('on')}
 function setStage(txt,done){['stage-chip','stage-chip2'].forEach(id=>{const c=q(id);if(!c)return;c.classList.add('on');c.classList.toggle('ac',done);c.classList.toggle('pu',!done)});['stage-txt','stage-txt2'].forEach(id=>{const el=q(id);if(el)el.textContent=txt});['stage-dot','stage-dot2'].forEach(id=>{const el=q(id);if(el)el.style.background=done?'var(--ac)':'var(--purple)'})}
@@ -1269,7 +1283,7 @@ async function generateTrellis(){
     }catch(e){}
     if(!pingOk)throw new Error('TRELLIS_OFFLINE');
     if(q('bk-dot'))q('bk-dot').className='bk-dot ok';trellisOk=true;
-    // 2. Build multipart form — POST /generate_no_preview
+    // 2. Build multipart form — POST /generate_no_preview (appel bloquant)
     setPg(10,'Envoi image…','TRELLIS API');
     const img=imgArr[0];
     const blob=await(await fetch(`data:${img.type||'image/jpeg'};base64,${img.b64}`)).blob();
@@ -1290,30 +1304,59 @@ async function generateTrellis(){
     fd.append('tex_rescale_t','3.0');
     fd.append('tex_guidance_strength','1.0');
     fd.append('output_format','glb');
-    const genR=await fetch(TRELLIS_URL+'/generate_no_preview',{method:'POST',body:fd});
+    // Animation de progression pendant le POST bloquant
+    // Estimation : résolution² × steps × facteur → ms
+    const _estMs=Math.max(20000,Math.round((trellisRes/512)**2*(trellisSsSteps+trellisSlatSteps)*650));
+    const _phases=[
+      {from:10,to:18,label:'Envoi image…',sub:'TRELLIS API'},
+      {from:18,to:22,label:'Suppression du fond…',sub:'background removal'},
+      {from:22,to:58,label:'Structure sparse 3D…',sub:'sparse · '+trellisSsSteps+' steps'},
+      {from:58,to:85,label:'Surface SLAT…',sub:'slat · '+trellisSlatSteps+' steps'},
+      {from:85,to:90,label:'Remesh & watertight…',sub:'mesh final · '+trellisRes+'³'},
+    ];
+    let _animPct=10,_animTick=0;
+    const _animTotal=_estMs/200;
+    const _animIntvl=setInterval(()=>{
+      _animTick++;
+      const raw=10+Math.min(80,(_animTick/_animTotal)*80);
+      const ph=_phases.find(p=>raw>=p.from&&raw<p.to)||_phases[_phases.length-1];
+      if(raw>_animPct){_animPct=raw;setPg(Math.round(raw),ph.label,ph.sub);}
+    },200);
+    trellisAbortCtrl=new AbortController();
+    let genR;
+    try{genR=await fetch(TRELLIS_URL+'/generate_no_preview',{method:'POST',body:fd,signal:trellisAbortCtrl.signal});}
+    finally{clearInterval(_animIntvl);trellisAbortCtrl=null;}
+    if(!genR)return; // annulé via stopTrellis()
     if(!genR.ok){const t=await genR.text();throw new Error('Génération refusée ('+genR.status+'): '+t.slice(0,60))}
     const genD=await genR.json();
     if(genD.status==='FAILED')throw new Error(genD.message||'Erreur génération');
-    setPg(20,'Génération en cours…','TRELLIS');
-    // 3. Poll GET /status every 2s
-    await new Promise((resolve,reject)=>{
-      trellisPoll=setInterval(async()=>{
-        try{
-          const sr=await fetch(TRELLIS_URL+'/status');
-          const sd=await sr.json();
-          const pct=Math.max(20,Math.min(90,20+sd.progress*0.7));
-          const lbl=sd.message||'Génération 3D…';
-          setPg(pct,lbl,'TRELLIS · '+trellisRes+'³');
-          if(sd.status==='COMPLETE'||sd.status==='PREVIEW_READY'){
-            clearInterval(trellisPoll);trellisPoll=null;resolve();
-          }else if(sd.status==='FAILED'){
-            clearInterval(trellisPoll);trellisPoll=null;
-            reject(new Error(sd.message||'TRELLIS a échoué'));
-          }
-        }catch(e){clearInterval(trellisPoll);trellisPoll=null;reject(e)}
-      },2000);
-      setTimeout(()=>{if(trellisPoll){clearInterval(trellisPoll);trellisPoll=null;reject(new Error('Timeout (>10 min)'))}},600000);
-    });
+    // Si le POST était bloquant et la génération déjà terminée → on saute le polling
+    if(genD.status==='COMPLETE'||genD.status==='PREVIEW_READY'){
+      setPg(92,'Modèle prêt, téléchargement…','TRELLIS');
+    } else {
+      setPg(90,'Finalisation…','TRELLIS · '+trellisRes+'³');
+    }
+    // 3. Poll GET /status uniquement si la génération n'est pas encore terminée
+    if(genD.status!=='COMPLETE'&&genD.status!=='PREVIEW_READY'){
+      await new Promise((resolve,reject)=>{
+        trellisPoll=setInterval(async()=>{
+          try{
+            const sr=await fetch(TRELLIS_URL+'/status');
+            const sd=await sr.json();
+            const pct=Math.max(90,Math.min(92,90+(sd.progress||0)*0.02));
+            const lbl=sd.message||'Génération 3D…';
+            setPg(Math.round(pct),lbl,'TRELLIS · '+trellisRes+'³');
+            if(sd.status==='COMPLETE'||sd.status==='PREVIEW_READY'){
+              clearInterval(trellisPoll);trellisPoll=null;resolve();
+            }else if(sd.status==='FAILED'){
+              clearInterval(trellisPoll);trellisPoll=null;
+              reject(new Error(sd.message||'TRELLIS a échoué'));
+            }
+          }catch(e){clearInterval(trellisPoll);trellisPoll=null;reject(e)}
+        },2000);
+        setTimeout(()=>{if(trellisPoll){clearInterval(trellisPoll);trellisPoll=null;reject(new Error('Timeout (>10 min)'))}},600000);
+      });
+    }
     // 4. Download GLB from GET /download/model
     setPg(93,'Téléchargement modèle…','TRELLIS');
     const dlR=await fetch(TRELLIS_URL+'/download/model');
@@ -1341,7 +1384,9 @@ async function generateTrellis(){
     setTimeout(()=>{showSpecs(hist[0]);showFils()},500);
   }catch(e){
     if(trellisPoll){clearInterval(trellisPoll);trellisPoll=null}
+    if(e.name==='AbortError')return; // annulé proprement par stopTrellis()
     setG(false);hidP();
+    const sb=q('stop-btn');if(sb)sb.classList.remove('on');
     const offline=e.message==='TRELLIS_OFFLINE'||e.message.includes('Failed to fetch')||e.message.includes('NetworkError')||e.message.includes('net::');
     if(offline){
       q('cv').style.display='none';q('emp').style.display='none';
