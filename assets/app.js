@@ -700,6 +700,57 @@ async function checkTrellis(){
 function setTrRes(r,el){trellisRes=r;document.querySelectorAll('.tr-res-card').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
 function setTrTexSize(v,el){trellisTexSize=v;document.querySelectorAll('.tr-tex-card').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
 function setTrFaceLimit(v){trellisFaceLimit=v;const lbl=q('tr-face-val');if(lbl)lbl.textContent=(v<10?v+'k':v+'k')}
+function setTrGuidance(v){trellisGuidance=v;const lbl=q('tr-guid-val');if(lbl)lbl.textContent=v.toFixed(1);const sl=q('tr-guid-sl');if(sl)sl.value=Math.round(v*10)}
+
+/* Presets TRELLIS — applique tous les paramètres en 1 clic */
+function applyTrPreset(p){
+  const presets={
+    fast:    {res:512, ss:12, slat:12, face:30,  tex:1024, guid:7.0},
+    balanced:{res:1024,ss:20, slat:20, face:50,  tex:2048, guid:7.5},
+    max:     {res:1536,ss:50, slat:50, face:100, tex:4096, guid:9.5},
+  };
+  const c=presets[p];if(!c)return;
+  // Résolution
+  trellisRes=c.res;
+  document.querySelectorAll('.tr-res-card').forEach(el=>{
+    const onclick=el.getAttribute('onclick')||'';
+    el.classList.toggle('on',onclick.includes('setTrRes('+c.res+','));
+  });
+  // Steps
+  trellisSsSteps=c.ss;trellisSlatSteps=c.slat;
+  if(q('tr-ss-sl')){q('tr-ss-sl').value=c.ss;q('tr-ss-val').textContent=c.ss}
+  if(q('tr-slat-sl')){q('tr-slat-sl').value=c.slat;q('tr-slat-val').textContent=c.slat}
+  // Face limit
+  trellisFaceLimit=c.face;
+  if(q('tr-face-sl')){q('tr-face-sl').value=c.face;setTrFaceLimit(c.face)}
+  // Texture size
+  trellisTexSize=c.tex;
+  document.querySelectorAll('.tr-tex-card').forEach(el=>{
+    const onclick=el.getAttribute('onclick')||'';
+    el.classList.toggle('on',onclick.includes('setTrTexSize('+c.tex+','));
+  });
+  // Guidance
+  setTrGuidance(c.guid);
+  // Mise à jour du bouton actif
+  document.querySelectorAll('.tr-preset').forEach(b=>b.classList.remove('on'));
+  const btn=Array.from(document.querySelectorAll('.tr-preset')).find(b=>(b.getAttribute('onclick')||'').includes("'"+p+"'"));
+  if(btn)btn.classList.add('on');
+  toast('Preset '+(p==='max'?'Qualité Max':p==='fast'?'Rapide':'Équilibré')+' appliqué','ok');
+}
+
+/* Preset Tripo "Visages humains" : HD + Multi-view */
+function applyFacePreset(){
+  // Bascule sur Tripo si on était en TRELLIS
+  if(backend==='trellis')setBackend('tripo');
+  // Force qualité HD
+  document.querySelectorAll('.q-card').forEach(c=>c.classList.remove('on'));
+  const hdCard=Array.from(document.querySelectorAll('.q-card')).find(c=>(c.getAttribute('onclick')||'').includes("'hd'"));
+  if(hdCard){hdCard.classList.add('on');quality='hd'}
+  // Bascule sur le mode Multi-view
+  setMode('multiview');
+  updateCost();
+  toast('👤 Preset Visages : Tripo HD + Multi-view (clique Raffiner HD après gen)','ok');
+}
 
 async function retryTrellis(){
   q('tr-offline')?.classList.remove('on');
