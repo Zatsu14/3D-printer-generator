@@ -19,13 +19,31 @@ let batchN=1,batchResults=[];
 let genStartTime=0;
 const STATS_KEY='form3d_stats_v1';
 let stats={gens:0,creds:0,totalMs:0,t0:Date.now()};
+/* Matériaux : densité + presets températures Bambu */
 const MATS={
-  PLA:{density:1.24,label:'PLA'},
-  PETG:{density:1.27,label:'PETG'},
-  TPU:{density:1.21,label:'TPU'},
-  ABS:{density:1.04,label:'ABS'},
-  ASA:{density:1.07,label:'ASA'},
+  PLA:    {density:1.24,label:'PLA',     nozzle:220,bed:65, speed:1.0, fanMin:80,fanMax:100,retract:0.8,zHop:0.4,supportInterface:'PLA Support', cooling:'Always on',  desc:'Polyvalent · idéal débutant'},
+  'PLA+': {density:1.24,label:'PLA+',    nozzle:225,bed:65, speed:0.9, fanMin:80,fanMax:100,retract:0.8,zHop:0.4,supportInterface:'PLA Support', cooling:'Always on',  desc:'Renforcé · meilleur tenue mécanique'},
+  PETG:   {density:1.27,label:'PETG',    nozzle:240,bed:80, speed:0.85,fanMin:30,fanMax:50, retract:1.0,zHop:0.4,supportInterface:'PETG/Support W',cooling:'Reduced',    desc:'Résistant chocs + chaleur · transparent OK'},
+  TPU:    {density:1.21,label:'TPU 95A', nozzle:230,bed:50, speed:0.4, fanMin:30,fanMax:50, retract:0.4,zHop:0.2,supportInterface:'Aucun (collant)', cooling:'Light',     desc:'Flexible · soft-touch · joints'},
+  ABS:    {density:1.04,label:'ABS',     nozzle:265,bed:95, speed:0.85,fanMin:0, fanMax:30, retract:1.2,zHop:0.4,supportInterface:'ABS Support',  cooling:'Minimal',    desc:'Résistant chaleur · enceinte recommandée'},
+  ASA:    {density:1.07,label:'ASA',     nozzle:260,bed:95, speed:0.85,fanMin:0, fanMax:30, retract:1.0,zHop:0.4,supportInterface:'ASA Support',  cooling:'Minimal',    desc:'UV-stable · usage extérieur'},
+  PC:     {density:1.20,label:'PC',      nozzle:280,bed:100,speed:0.7, fanMin:0, fanMax:20, retract:1.0,zHop:0.4,supportInterface:'PC Support',   cooling:'Off',        desc:'Très solide · enceinte obligatoire'},
+  'PA-CF':{density:1.20,label:'PA-CF',   nozzle:290,bed:90, speed:0.75,fanMin:0, fanMax:30, retract:1.0,zHop:0.4,supportInterface:'PA-CF Support',cooling:'Off',        desc:'Nylon fibre carbone · pro · buse acier'},
 };
+
+/* Profils imprimantes Bambu Lab */
+const PRINTERS={
+  'X2D':     {label:'X2D',         plate:[350,350,300],speed:600, accel:20000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:110,hotendMax:320,enclosed:true, multicolor:16,brand:'Bambu Lab',profileName:'Bambu Lab X2D 0.4 nozzle',desc:'Flagship multicolor CMYK · 4 AMS · recommandé'},
+  'H2D':     {label:'H2D',         plate:[350,320,325],speed:1000,accel:20000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:120,hotendMax:350,enclosed:true, multicolor:16,brand:'Bambu Lab',profileName:'Bambu Lab H2D 0.4 nozzle',desc:'Double tête · ultra-rapide · matériaux pro'},
+  'X1C':     {label:'X1 Carbon',   plate:[256,256,256],speed:500, accel:20000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:110,hotendMax:300,enclosed:true, multicolor:16,brand:'Bambu Lab',profileName:'Bambu Lab X1 Carbon 0.4 nozzle',desc:'Polyvalent enclosure · AMS'},
+  'X1E':     {label:'X1E',         plate:[256,256,256],speed:500, accel:20000,nozzleDef:0.4,nozzles:[0.4,0.6,0.8],     bedMax:120,hotendMax:320,enclosed:true, multicolor:16,brand:'Bambu Lab',profileName:'Bambu Lab X1E 0.4 nozzle',desc:'Engineering · PA/PC/PEEK'},
+  'P1S':     {label:'P1S',         plate:[256,256,256],speed:500, accel:20000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:100,hotendMax:300,enclosed:true, multicolor:16,brand:'Bambu Lab',profileName:'Bambu Lab P1S 0.4 nozzle',desc:'Enclosed · bon rapport qualité/prix'},
+  'P1P':     {label:'P1P',         plate:[256,256,256],speed:500, accel:20000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:100,hotendMax:300,enclosed:false,multicolor:16,brand:'Bambu Lab',profileName:'Bambu Lab P1P 0.4 nozzle',desc:'Ouvert · PLA/PETG/TPU'},
+  'A1':      {label:'A1',          plate:[256,256,256],speed:500, accel:10000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:100,hotendMax:300,enclosed:false,multicolor:4, brand:'Bambu Lab',profileName:'Bambu Lab A1 0.4 nozzle',desc:'AMS Lite 4 couleurs · CoreXY bedslinger'},
+  'A1 mini': {label:'A1 mini',     plate:[180,180,180],speed:500, accel:10000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:80, hotendMax:300,enclosed:false,multicolor:4, brand:'Bambu Lab',profileName:'Bambu Lab A1 mini 0.4 nozzle',desc:'Compact · idéal petits modèles'},
+};
+let selectedPrinter='X2D';
+let nozzleSize=0.4;
 
 /* ── TRELLIS ── */
 let backend='tripo'; // 'tripo'|'trellis'
@@ -369,27 +387,64 @@ async function doAnimate(){
 }
 async function waitTask(key,id){return new Promise((res,rej)=>{const pint=setInterval(async()=>{try{const r=await fetch(PROXY+'/task/'+id,{headers:{'Authorization':'Bearer '+key}});const d=await r.json();if(d.data?.status==='success'){clearInterval(pint);res(d.data)}else if(['failed','cancelled'].includes(d.data?.status)){clearInterval(pint);rej(new Error('Tâche échouée'))}}catch(e){clearInterval(pint);rej(e)}},3000)})}
 
+/* Détecte si le mesh a des textures (couleur) */
+function meshHasTextures(){
+  if(!mesh)return false;
+  let has=false;
+  mesh.traverse(n=>{if(n.isMesh&&n.material&&(n.material.map||n.userData?.om))has=true});
+  return has;
+}
+
+/* Helper : télécharge un blob avec nom de fichier garanti */
+function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
 async function doE(fmt){
   if(!mUrls.glb){toast('Génère d\'abord un modèle',true);return}
+  const fmtLow=fmt.toLowerCase();
+  const ext='.'+fmtLow;
+  const base='form-3d_'+(Date.now().toString(36));
+  // Warning couleur sur STL si le modèle a des textures
+  if(fmtLow==='stl'&&meshHasTextures()){
+    if(!confirm('⚠️ STL ne supporte pas les couleurs.\n\nTon modèle a des textures qui seront perdues.\n\n3MF préserve la couleur et est natif Bambu Studio.\n\nContinuer en STL ?'))return;
+  }
+  // TRELLIS / blob URL
   if(backend==='trellis'||mUrls._trellis){
-    if(fmt!=='glb'){toast('Mode TRELLIS : GLB uniquement — STL/3MF requièrent Tripo',true);return}
-    // mUrls.glb est une blob: URL — téléchargement direct
-    const a=document.createElement('a');a.href=mUrls.glb;a.download='trellis_model.glb';document.body.appendChild(a);a.click();document.body.removeChild(a);
-    toast('Export GLB lancé');return;
+    if(fmtLow!=='glb'){toast('Mode TRELLIS : GLB uniquement — utilise Bambu Studio pour convertir',true);return}
+    try{const r=await fetch(mUrls.glb);const blob=await r.blob();downloadBlob(blob,base+ext);toast('✓ '+fmt.toUpperCase()+' téléchargé','ok');}
+    catch(e){toast('Erreur téléchargement',true)}
+    return;
   }
   const key=q('akey').value.trim();
-  if(fmt==='glb'){
-    // Si on a le GLB en IDB → export direct depuis blob, pas de proxy expiré
+  // GLB direct depuis IDB ou proxy
+  if(fmtLow==='glb'){
     const buf=mUrls._taskId?await idbGet(mUrls._taskId):null;
-    if(buf){const blob=new Blob([buf],{type:'model/gltf-binary'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='bambu.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('Export GLB lancé');return}
-    const a=document.createElement('a');a.href=PROXY+'/model?url='+encodeURIComponent(mUrls.glb);a.download='bambu.glb';a.click();toast('Export GLB lancé');return
+    if(buf){downloadBlob(new Blob([buf],{type:'model/gltf-binary'}),base+ext);toast('✓ GLB téléchargé','ok');return}
+    try{const r=await fetch(PROXY+'/model?url='+encodeURIComponent(mUrls.glb));const blob=await r.blob();downloadBlob(blob,base+ext);toast('✓ GLB téléchargé','ok');}
+    catch(e){toast('Erreur téléchargement',true)}
+    return;
   }
+  // Conversion via Tripo API → STL/3MF/FBX/OBJ
   toast('Conversion '+fmt+'…');
   const flat=q('opt-flat').checked;
   try{
     const res=await fetch(PROXY+'/task',{method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({type:'convert_model',format:fmt,original_model_task_id:mUrls._taskId,flatten_bottom:flat,pivot_to_center_bottom:flat})});
     const d=await res.json();if(!res.ok)throw new Error(d.message);const convId=d.data.task_id;
-    const pint=setInterval(async()=>{const r2=await fetch(PROXY+'/task/'+convId,{headers:{'Authorization':'Bearer '+key}});const d2=await r2.json();if(d2.data?.status==='success'){clearInterval(pint);const url=d2.data.output?.model;if(url){const a=document.createElement('a');a.href=PROXY+'/model?url='+encodeURIComponent(url);a.download='bambu.'+fmt.toLowerCase();a.click();toast('✓ '+fmt+' téléchargé !','ok')}}else if(['failed','cancelled'].includes(d2.data?.status)){clearInterval(pint);toast('Conversion échouée',true)}},2000);
+    const pint=setInterval(async()=>{
+      const r2=await fetch(PROXY+'/task/'+convId,{headers:{'Authorization':'Bearer '+key}});const d2=await r2.json();
+      if(d2.data?.status==='success'){
+        clearInterval(pint);const url=d2.data.output?.model;
+        if(url){
+          // Toujours fetch comme blob pour forcer le nom + extension
+          try{const rr=await fetch(PROXY+'/model?url='+encodeURIComponent(url));const blob=await rr.blob();downloadBlob(blob,base+ext);toast('✓ '+fmt+' téléchargé !','ok');}
+          catch(e){toast('Erreur téléchargement',true)}
+        }
+      }else if(['failed','cancelled'].includes(d2.data?.status)){clearInterval(pint);toast('Conversion échouée',true)}
+    },2000);
   }catch(e){toast(e.message.slice(0,60),true)}
 }
 
@@ -482,26 +537,265 @@ function rH(){
   el.innerHTML=hist.map((h,i)=>`<div class="hi ${i===histSelIdx?'on':i===0&&histSelIdx<0?'on':''}" onclick="selH(${i})"><div class="hiT">${h.thumb?`<img src="${h.thumb}"/>`:'⬡'}</div><div style="flex:1;min-width:0"><div class="hip">${(h.prompt||'').slice(0,22)}${(h.prompt||'').length>22?'…':''}</div><div class="him">${h.mode}·${h.quality||'hd'}·${h.date?new Date(h.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</div></div><div class="hid d${h.status==='done'?'ok':h.status==='error'?'er':'ld'}"></div></div>`).join('')
 }
 
+/* Détection overhangs : > 45° → supports nécessaires */
+function detectSupports(mesh){
+  if(!mesh)return{needed:false,score:0,reason:'Pas de mesh'};
+  let overhang=0,total=0;
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry)return;
+    const g=n.geometry;const pos=g.attributes.position;const idx=g.index;
+    if(!pos)return;
+    const facesCount=idx?idx.count/3:pos.count/3;
+    for(let i=0;i<Math.min(facesCount,2000);i++){
+      const i0=idx?idx.getX(i*3):i*3,i1=idx?idx.getX(i*3+1):i*3+1,i2=idx?idx.getX(i*3+2):i*3+2;
+      const ax=pos.getX(i0),ay=pos.getY(i0),az=pos.getZ(i0);
+      const bx=pos.getX(i1),by=pos.getY(i1),bz=pos.getZ(i1);
+      const cx=pos.getX(i2),cy=pos.getY(i2),cz=pos.getZ(i2);
+      // normale via produit vectoriel
+      const ux=bx-ax,uy=by-ay,uz=bz-az;
+      const vx=cx-ax,vy=cy-ay,vz=cz-az;
+      const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+      const len=Math.sqrt(nx*nx+ny*ny+nz*nz);if(len<1e-6)continue;
+      const dotY=ny/len; // composante Y de la normale normalisée
+      total++;
+      if(dotY<-0.3)overhang++; // face pointant vers le bas avec angle > 17°
+    }
+  });
+  const ratio=total>0?overhang/total:0;
+  return{
+    needed:ratio>0.05,
+    score:Math.round(ratio*100),
+    reason:ratio>0.2?'Beaucoup d\'overhangs (>'+Math.round(ratio*100)+'%)':ratio>0.05?'Overhangs détectés ('+Math.round(ratio*100)+'%)':'Modèle stable'
+  };
+}
+
 function showSpecs(h){
   const bbox=mesh?new THREE.Box3().setFromObject(mesh):null;const sz=new THREE.Vector3();if(bbox)bbox.getSize(sz);
-  const bsc=mesh?.userData?.baseScale||mesh?.scale?.x||1;const dX=Math.round(Math.max(sz.x/bsc,0.05)*100*modelScale)||100,dY=Math.round(Math.max(sz.y/bsc,0.05)*100*modelScale)||150,dZ=Math.round(Math.max(sz.z/bsc,0.05)*100*modelScale)||100;
-  const maxD=Math.max(dX,dY,dZ);const vol=Math.round(dX*dY*dZ*0.35/1000);const wPLA=Math.round(vol*1.24);const lM=(wPLA/1.24*0.01).toFixed(1);
-  const tMin=Math.round(wPLA*3.5);const tH=Math.floor(tMin/60),tM=tMin%60;
-  const layerH=maxD>200?'0.10mm':maxD>100?'0.15mm':'0.20mm';
-  currentSpecs={prompt:h.prompt||'—',taskId:h.id,date:h.date?new Date(h.date).toLocaleString('fr-FR'):'—',quality:(h.quality||'hd').toUpperCase(),dims:`${dX}×${dY}×${dZ} mm`,weight:'~'+wPLA+'g',fil:'~'+lM+'m PLA 1.75mm',time:'~'+tH+'h'+tM.toString().padStart(2,'0'),layer:layerH,infill:'15%',supp:'Oui (détachables)',plate:maxD>200?'Cool Plate XL':'Cool Plate / Textured PEI',mat:'PLA ou PLA+'};
-  q('specs-content').innerHTML='<div style="padding:10px 12px">'+
-    sR('📝','Prompt',currentSpecs.prompt.slice(0,50)+(currentSpecs.prompt.length>50?'…':''))+
-    sR('🔑','Task ID',(currentSpecs.taskId||'—').slice(0,16)+'…')+
-    sR('📅','Date',currentSpecs.date)+sR('⭐','Qualité',currentSpecs.quality)+
-    '<div style="height:1px;background:var(--b2);margin:6px 0"></div>'+
-    sR('📐','Dimensions',currentSpecs.dims)+sR('⚖️','Poids',currentSpecs.weight)+sR('🧵','Filament',currentSpecs.fil)+sR('⏱','Temps est.',currentSpecs.time)+
-    '<div style="height:1px;background:var(--b2);margin:6px 0"></div>'+
-    sR('🔧','Épaisseur couche',currentSpecs.layer)+sR('🔲','Remplissage',currentSpecs.infill)+sR('🏗','Supports',currentSpecs.supp)+sR('🔴','Plateau',currentSpecs.plate)+sR('🧪','Matériau',currentSpecs.mat)+
+  const bsc=mesh?.userData?.baseScale||mesh?.scale?.x||1;
+  const dX=Math.round(Math.max(sz.x/bsc,0.05)*100*modelScale)||100;
+  const dY=Math.round(Math.max(sz.y/bsc,0.05)*100*modelScale)||150;
+  const dZ=Math.round(Math.max(sz.z/bsc,0.05)*100*modelScale)||100;
+  const maxD=Math.max(dX,dY,dZ);
+  const printer=PRINTERS[selectedPrinter]||PRINTERS['X2D'];
+  const mat=MATS[currentMat]||MATS.PLA;
+  // Vérif fit sur plateau
+  const fits=dX<=printer.plate[0]&&dY<=printer.plate[1]&&dZ<=printer.plate[2];
+  // Calculs filament
+  const vol=dX*dY*dZ*0.35/1000; // cm³ estimé (35% remplissage moyen incl. murs)
+  const surfaceArea=2*(dX*dY+dY*dZ+dX*dZ)/100; // cm²
+  const wG=Math.round(vol*mat.density);
+  const lenM=(wG/(mat.density*Math.PI*0.875*0.875)/100).toFixed(2);
+  // Temps : ajusté selon vitesse imprimante + matériau
+  const speedFactor=(600/printer.speed)*(1/mat.speed); // X2D=1, plus lent = plus
+  const tMin=Math.round(wG*2.5*speedFactor);
+  const tH=Math.floor(tMin/60),tM=tMin%60;
+  // Épaisseur couche selon qualité + buse
+  const layerOpts={hd:nozzleSize*0.4,std:nozzleSize*0.5,fast:nozzleSize*0.6};
+  const layerH=(layerOpts[maxD>200?'hd':maxD>100?'std':'fast']||0.2).toFixed(2);
+  // Cooling
+  const cool=`${mat.fanMin}-${mat.fanMax}%`;
+  // Supports
+  const sup=detectSupports(mesh);
+  const supLabel=sup.needed?`Recommandés · ${sup.reason}`:'Non nécessaires · '+sup.reason;
+  // Plateau
+  const plate=mat.bed>=90?'Engineering Plate / High Temp':mat.bed>=80?'PEI Texturé / Smooth':'Cool Plate / PEI';
+  // Couleur ?
+  const colorOk=meshHasTextures();
+  // Murs / top/bottom selon qualité
+  const wallCount=maxD>150?3:2;
+  const topBottom=maxD>150?5:4;
+  // Coût électricité (estimation 0.20 €/kWh, conso ~150W)
+  const kwh=(tMin/60*0.150).toFixed(3);
+  const elecCost=(kwh*0.20).toFixed(3);
+  const matCost=(wG/1000*matPrice).toFixed(2);
+  const totalCost=(parseFloat(elecCost)+parseFloat(matCost)).toFixed(2);
+
+  currentSpecs={
+    // Méta
+    prompt:h.prompt||'—',taskId:h.id,date:h.date?new Date(h.date).toLocaleString('fr-FR'):'—',quality:(h.quality||'hd').toUpperCase(),
+    // Imprimante
+    printer:printer.label,profile:printer.profileName,plate:printer.plate.join('×')+' mm',fits,multicolor:colorOk&&printer.multicolor>1,
+    // Géométrie
+    dims:`${dX}×${dY}×${dZ} mm`,maxD:maxD+' mm',volume:vol.toFixed(1)+' cm³',surface:surfaceArea.toFixed(1)+' cm²',
+    // Matériau / filament
+    mat:mat.label,matDesc:mat.desc,weight:wG+' g',fil:lenM+' m · ⌀ 1.75 mm',density:mat.density+' g/cm³',
+    // Températures
+    nozzleTemp:mat.nozzle+'°C',bedTemp:mat.bed+'°C',
+    // Buse / couches
+    nozzle:nozzleSize+' mm',layer:layerH+' mm',firstLayer:(parseFloat(layerH)*1.5).toFixed(2)+' mm',
+    // Vitesses
+    speedOuter:Math.round(printer.speed*0.5*mat.speed)+' mm/s',speedInner:Math.round(printer.speed*0.7*mat.speed)+' mm/s',speedInfill:Math.round(printer.speed*mat.speed)+' mm/s',speedTravel:Math.round(printer.speed*1.2)+' mm/s',accel:printer.accel+' mm/s²',
+    // Structure
+    walls:wallCount+' (périmètres)',topBottom:topBottom+' couches',infill:'15%',infillPattern:'Gyroid',
+    // Cooling / mécanique
+    cooling:cool+' ('+mat.cooling+')',retract:mat.retract+' mm',zHop:mat.zHop+' mm',
+    // Adhésion + supports
+    adhesion:mat.bed>=90?'Brim 5mm + colle stick':'Brim 3mm',
+    supports:supLabel,supportType:sup.needed?'Tree (auto)':'—',supportInterface:sup.needed?mat.supportInterface:'—',
+    // Plateau / enclosure
+    plate,enclosure:printer.enclosed?'Fermée (recommandée)':'Ouverte',
+    // Temps / coûts
+    time:tH+'h'+String(tM).padStart(2,'0'),power:kwh+' kWh',matCost:matCost+' €',elecCost:elecCost+' €',totalCost:totalCost+' €',
+    // Color
+    color:colorOk?(printer.multicolor>1?'✓ Multicolor (AMS '+printer.multicolor+')':'✓ Texture présente — single color'):'Mesh nu (pas de texture)',
+  };
+
+  let warns='';
+  if(!fits)warns+=warnRow('Modèle trop grand pour '+printer.label+' ('+printer.plate.join('×')+' mm) — réduire l\'échelle');
+  if(colorOk&&printer.multicolor<=1)warns+=warnRow('Multicolor indisponible sur '+printer.label+' — utiliser X2D / X1C / P1S');
+  if(mat.bed>=90&&!printer.enclosed)warns+=warnRow(mat.label+' nécessite une enclosure — préférer X2D / X1C / P1S');
+
+  q('specs-content').innerHTML='<div style="padding:10px 12px">'+warns+
+    secH('🖨 Imprimante')+
+    sR('🏷','Modèle',currentSpecs.printer)+
+    sR('📋','Profil slicer',currentSpecs.profile)+
+    sR('📏','Volume d\'impression',currentSpecs.plate)+
+    sR('🧰','Enclosure',currentSpecs.enclosure)+
+    sR('🎨','Multicolor',currentSpecs.color)+
+    secH('📐 Géométrie')+
+    sR('📐','Dimensions',currentSpecs.dims)+
+    sR('📊','Volume mesh',currentSpecs.volume)+
+    sR('🔲','Surface',currentSpecs.surface)+
+    sR('⚖','Poids estimé',currentSpecs.weight)+
+    secH('🧵 Matériau')+
+    sR('🧪','Filament',currentSpecs.mat+' — '+currentSpecs.matDesc)+
+    sR('🎯','Densité',currentSpecs.density)+
+    sR('📏','Longueur',currentSpecs.fil)+
+    sR('🌡','Température buse',currentSpecs.nozzleTemp)+
+    sR('🔥','Température plateau',currentSpecs.bedTemp)+
+    secH('🔧 Couches & buse')+
+    sR('🔘','Buse',currentSpecs.nozzle)+
+    sR('📑','Épaisseur couche',currentSpecs.layer)+
+    sR('1️⃣','Première couche',currentSpecs.firstLayer)+
+    sR('🧱','Murs',currentSpecs.walls)+
+    sR('⬆','Top/Bottom',currentSpecs.topBottom)+
+    sR('🔳','Remplissage',currentSpecs.infill+' · '+currentSpecs.infillPattern)+
+    secH('⚡ Vitesses')+
+    sR('🌀','Périmètre extérieur',currentSpecs.speedOuter)+
+    sR('🌀','Périmètre intérieur',currentSpecs.speedInner)+
+    sR('▦','Remplissage',currentSpecs.speedInfill)+
+    sR('💨','Déplacement',currentSpecs.speedTravel)+
+    sR('⚙','Accélération',currentSpecs.accel)+
+    secH('🏗 Supports & adhésion')+
+    sR('🏗','Supports',currentSpecs.supports)+
+    sR('🌳','Type supports',currentSpecs.supportType)+
+    sR('📎','Interface',currentSpecs.supportInterface)+
+    sR('📍','Adhésion plateau',currentSpecs.adhesion)+
+    sR('🔴','Plateau recommandé',currentSpecs.plate)+
+    secH('🌬 Refroidissement & mécanique')+
+    sR('🌬','Ventilation',currentSpecs.cooling)+
+    sR('↩','Rétraction',currentSpecs.retract)+
+    sR('⬇','Z-hop',currentSpecs.zHop)+
+    secH('⏱ Temps & coûts')+
+    sR('⏱','Temps d\'impression',currentSpecs.time)+
+    sR('⚡','Conso électrique',currentSpecs.power)+
+    sR('💰','Coût filament',currentSpecs.matCost)+
+    sR('🔌','Coût électricité',currentSpecs.elecCost)+
+    sR('💶','Coût total',currentSpecs.totalCost)+
+    secH('🔑 Métadonnées')+
+    sR('📝','Prompt',currentSpecs.prompt.slice(0,80)+(currentSpecs.prompt.length>80?'…':''))+
+    sR('🆔','Task ID',(currentSpecs.taskId||'—').slice(0,20)+'…')+
+    sR('📅','Date',currentSpecs.date)+
+    sR('⭐','Qualité gen',currentSpecs.quality)+
     '</div>';
   q('copy-specs-btn').disabled=false;setRTab('specs');
 }
 function sR(ico,label,val){return`<div class="spec-row"><span class="spec-ico">${ico}</span><div><div class="spec-label">${label}</div><div class="spec-val">${val}</div></div></div>`}
-function copySpecs(){if(!currentSpecs)return;const t=`=== FORM 3D — Bambu Studio ===\nPrompt: ${currentSpecs.prompt}\nDate: ${currentSpecs.date}\nQualité: ${currentSpecs.quality}\n\nDimensions: ${currentSpecs.dims}\nPoids: ${currentSpecs.weight}\nFilament: ${currentSpecs.fil}\nTemps: ${currentSpecs.time}\n\nÉpaisseur couche: ${currentSpecs.layer}\nRemplissage: ${currentSpecs.infill}\nSupports: ${currentSpecs.supp}\nPlateau: ${currentSpecs.plate}\nMatériau: ${currentSpecs.mat}`;navigator.clipboard.writeText(t).then(()=>toast('✓ Specs copiées !','ok')).catch(()=>toast('Erreur copie',true))}
+function secH(t){return`<div class="spec-section-h">${t}</div>`}
+function warnRow(t){return`<div class="spec-warn">⚠️ ${t}</div>`}
+
+function copySpecs(){
+  if(!currentSpecs)return;
+  const cs=currentSpecs;
+  const t=`╔════════════════════════════════════════╗
+║   FORM 3D · Profil Bambu Studio        ║
+╚════════════════════════════════════════╝
+
+🖨 IMPRIMANTE
+  Modèle          : ${cs.printer}
+  Profil          : ${cs.profile}
+  Volume          : ${cs.plate}
+  Enclosure       : ${cs.enclosure}
+  Multicolor      : ${cs.color}
+
+📐 GÉOMÉTRIE
+  Dimensions      : ${cs.dims}
+  Volume mesh     : ${cs.volume}
+  Surface         : ${cs.surface}
+  Poids           : ${cs.weight}
+
+🧵 MATÉRIAU
+  Filament        : ${cs.mat} (${cs.matDesc})
+  Densité         : ${cs.density}
+  Longueur        : ${cs.fil}
+  T° buse         : ${cs.nozzleTemp}
+  T° plateau      : ${cs.bedTemp}
+
+🔧 COUCHES
+  Buse            : ${cs.nozzle}
+  Épaisseur       : ${cs.layer}
+  1ère couche     : ${cs.firstLayer}
+  Murs            : ${cs.walls}
+  Top/Bottom      : ${cs.topBottom}
+  Remplissage     : ${cs.infill} · ${cs.infillPattern}
+
+⚡ VITESSES
+  Périmètre ext.  : ${cs.speedOuter}
+  Périmètre int.  : ${cs.speedInner}
+  Remplissage     : ${cs.speedInfill}
+  Déplacement     : ${cs.speedTravel}
+  Accélération    : ${cs.accel}
+
+🏗 SUPPORTS & ADHÉSION
+  Supports        : ${cs.supports}
+  Type            : ${cs.supportType}
+  Interface       : ${cs.supportInterface}
+  Adhésion        : ${cs.adhesion}
+  Plateau         : ${cs.plate}
+
+🌬 REFROIDISSEMENT
+  Ventilation     : ${cs.cooling}
+  Rétraction      : ${cs.retract}
+  Z-hop           : ${cs.zHop}
+
+⏱ TEMPS & COÛTS
+  Temps           : ${cs.time}
+  Électricité     : ${cs.power} (${cs.elecCost})
+  Filament        : ${cs.matCost}
+  TOTAL           : ${cs.totalCost}
+
+📝 Prompt : ${cs.prompt}
+🆔 Task   : ${cs.taskId}
+📅 Date   : ${cs.date}`;
+  navigator.clipboard.writeText(t).then(()=>toast('✓ Specs complètes copiées !','ok')).catch(()=>toast('Erreur copie',true));
+}
+
+/* Setter pour le profil imprimante */
+function setPrinter(name){
+  if(!PRINTERS[name])return;
+  selectedPrinter=name;
+  // Reset nozzle si non disponible
+  const p=PRINTERS[name];
+  if(!p.nozzles.includes(nozzleSize))nozzleSize=p.nozzleDef;
+  document.querySelectorAll('.pr-card').forEach(c=>c.classList.toggle('on',c.dataset.printer===name));
+  renderNozzleOpts();
+  if(hist.length&&hist[0])showSpecs(hist[0]);
+  localStorage.setItem('form3d_printer',name);
+}
+function setNozzle(n){
+  nozzleSize=n;
+  document.querySelectorAll('.nz-card').forEach(c=>c.classList.toggle('on',+c.dataset.nz===n));
+  if(hist.length&&hist[0])showSpecs(hist[0]);
+}
+function renderPrinterGrid(){
+  const el=q('printer-grid');if(!el)return;
+  el.innerHTML=Object.entries(PRINTERS).map(([k,p])=>`<div class="pr-card${k===selectedPrinter?' on':''}" data-printer="${k}" onclick="setPrinter('${k}')"><div class="pr-name">${p.label}</div><div class="pr-sub">${p.plate[0]}×${p.plate[1]}×${p.plate[2]} · ${p.speed}mm/s</div><div class="pr-desc">${p.desc}</div></div>`).join('');
+}
+function renderNozzleOpts(){
+  const el=q('nozzle-row');if(!el)return;
+  const p=PRINTERS[selectedPrinter]||PRINTERS['X2D'];
+  el.innerHTML=p.nozzles.map(n=>`<div class="nz-card${n===nozzleSize?' on':''}" data-nz="${n}" onclick="setNozzle(${n})">${n} mm</div>`).join('');
+}
 
 function showFils(){
   const cols=inferCols();const mat=MATS[currentMat]||MATS.PLA;const bg=20;
@@ -916,6 +1210,12 @@ window.addEventListener('load',()=>{
   initTouch();
   initMob();
   initMatGrid();
+  // Restore profil imprimante
+  const savedPrinter=localStorage.getItem('form3d_printer');
+  if(savedPrinter&&PRINTERS[savedPrinter])selectedPrinter=savedPrinter;
+  const p=PRINTERS[selectedPrinter]||PRINTERS['X2D'];
+  if(!p.nozzles.includes(nozzleSize))nozzleSize=p.nozzleDef;
+  renderPrinterGrid();renderNozzleOpts();
   loadStats();updateStats();
   setInterval(updateStats,10000);
   const saved=localStorage.getItem('form3d_key');if(saved){q('akey').value=saved;ckK()}
