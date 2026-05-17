@@ -18,6 +18,10 @@
       <button class="bk-btn on" id="bk-tripo" onclick="setBackend('tripo')">☁ Tripo3D</button>
       <button class="bk-btn trl" id="bk-trellis" onclick="setBackend('trellis')"><span class="bk-dot" id="bk-dot"></span>TRELLIS Local</button>
     </div>
+    <button class="help-btn" onclick="openModal('modal-guide')" title="Guide d'utilisation">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Guide
+    </button>
     <div class="credit-chip" id="crd-chip"><div class="credit-dot"></div><span id="crd-val">— crédits</span></div>
   </div>
 </div>
@@ -323,11 +327,12 @@
   <div class="r-pane" id="rpane-exp">
     <div class="exp-wrap">
       <div class="lbl" style="margin-bottom:10px">Télécharger</div>
-      <div class="ec dis" id="ex-glb" onclick="doE('glb')"><div class="ei" style="background:rgba(255,79,79,.12);color:var(--red)">GLB</div><div><div class="en2">GLB / GLTF</div><div class="ed2">Blender · Unity · Web</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ec dis" id="ex-stl" onclick="doE('STL')"><div class="ei" style="background:rgba(212,245,66,.15);color:var(--ac)">STL</div><div><div class="en2">STL</div><div class="ed2">Bambu Studio · OrcaSlicer</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ec dis" id="ex-3mf" onclick="doE('3MF')"><div class="ei" style="background:rgba(79,195,247,.12);color:var(--blue)">3MF</div><div><div class="en2">3MF</div><div class="ed2">Bambu AMS multi-couleur</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ec dis" id="ex-fbx" onclick="doE('FBX')"><div class="ei" style="background:rgba(176,110,243,.12);color:var(--purple)">FBX</div><div><div class="en2">FBX</div><div class="ed2">Blender · Maya · 3dsMax</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ec dis" id="ex-obj" onclick="doE('OBJ')"><div class="ei" style="background:rgba(245,166,35,.12);color:var(--orange)">OBJ</div><div><div class="en2">OBJ</div><div class="ed2">Format universel</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec dis" id="ex-glb" onclick="doE('glb')"><div class="ei" style="background:rgba(255,79,79,.12);color:var(--red)">GLB</div><div style="flex:1"><div class="en2">GLB / GLTF <span class="ex-badge ex-free">★ Recommandé · Gratuit</span></div><div class="ed2">Bambu Studio (depuis 2024) · Blender · Web</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec dis" id="ex-stl" onclick="doE('STL')"><div class="ei" style="background:rgba(212,245,66,.15);color:var(--ac)">STL</div><div style="flex:1"><div class="en2">STL <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Sans couleur · Bambu/Orca/Prusa</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec dis" id="ex-3mf" onclick="doE('3MF')"><div class="ei" style="background:rgba(79,195,247,.12);color:var(--blue)">3MF</div><div style="flex:1"><div class="en2">3MF <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Couleur · Bambu AMS multi-filament</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec dis" id="ex-fbx" onclick="doE('FBX')"><div class="ei" style="background:rgba(176,110,243,.12);color:var(--purple)">FBX</div><div style="flex:1"><div class="en2">FBX <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Blender · Maya · 3dsMax · Unity</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec dis" id="ex-obj" onclick="doE('OBJ')"><div class="ei" style="background:rgba(245,166,35,.12);color:var(--orange)">OBJ</div><div style="flex:1"><div class="en2">OBJ <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Format universel</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ex-tip">💡 <b>GLB est gratuit</b> et accepté par Bambu Studio depuis 2024 — préfère ce format pour économiser tes crédits Tripo</div>
       <div style="height:1px;background:var(--b);margin:8px 0"></div>
       <div class="ec dis" id="ex-bambu" onclick="openBambu()"><div class="ei" style="background:rgba(118,185,0,.12);color:var(--ac)">🎯</div><div><div class="en2">Bambu Studio</div><div class="ed2">Ouvrir via bambu-studio://</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
@@ -361,6 +366,203 @@
     <div class="modal-btns">
       <button class="mbtn sec" onclick="closeModal('modal-retex')">Annuler</button>
       <button class="mbtn pri" onclick="doRetexture()">Appliquer la texture</button>
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE D'UTILISATION -->
+<div class="modal-bg" id="modal-guide">
+  <div class="modal guide-modal">
+    <div class="guide-head">
+      <div class="guide-t">📖 Guide d'utilisation FORM</div>
+      <button class="guide-close" onclick="closeModal('modal-guide')">✕</button>
+    </div>
+    <div class="guide-tabs">
+      <button class="guide-tab on" onclick="setGuideTab('start')">🚀 Démarrer</button>
+      <button class="guide-tab" onclick="setGuideTab('gen')">⚡ Générer</button>
+      <button class="guide-tab" onclick="setGuideTab('quality')">★ Qualité</button>
+      <button class="guide-tab" onclick="setGuideTab('export')">📦 Export</button>
+      <button class="guide-tab" onclick="setGuideTab('print')">🖨 Imprimer</button>
+      <button class="guide-tab" onclick="setGuideTab('faq')">❓ FAQ</button>
+    </div>
+
+    <div class="guide-body">
+
+      <!-- ─── DÉMARRER ─── -->
+      <div class="guide-pane on" id="guide-start">
+        <h3>1. Choisir un backend</h3>
+        <div class="guide-card">
+          <div class="g-card-h">☁ <b>Tripo3D</b> (cloud, payant)</div>
+          <p>Génération en quelques secondes/minutes via l'API Tripo. <b>Meilleure qualité pour les visages</b> et formes complexes. Nécessite une clé API.</p>
+          <ol>
+            <li>Crée un compte sur <a href="https://platform.tripo3d.ai" target="_blank">platform.tripo3d.ai</a></li>
+            <li>Génère une clé API (commence par <code>tsk_</code>)</li>
+            <li>Colle-la dans le panneau gauche (zone "Clé API Tripo3D")</li>
+            <li>Tarif : ~10-50 crédits par génération selon la qualité</li>
+          </ol>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">🟣 <b>TRELLIS Local</b> (gratuit, GPU NVIDIA requis)</div>
+          <p>Génération 100% locale, gratuite, illimitée. Bon pour les objets, <b>moyen pour les visages humains</b>.</p>
+          <ol>
+            <li>Installe le fork <a href="https://github.com/IgorAherne/TRELLIS.2-stableprojectorz" target="_blank">IgorAherne/TRELLIS.2-stableprojectorz</a></li>
+            <li>Lance l'API : <code>python -m uvicorn api_spz.main_api:app --host 127.0.0.1 --port 7960</code></li>
+            <li>Bascule sur "TRELLIS Local" dans la barre du haut</li>
+            <li>Le point doit passer 🟢 vert quand le serveur répond</li>
+          </ol>
+        </div>
+
+        <h3>2. Choisir ton imprimante (panneau Filaments)</h3>
+        <p>Va dans l'onglet <b>Filam.</b> à droite, choisis ton modèle Bambu Lab. La <b>X2D</b> est sélectionnée par défaut. Tous les calculs (vitesse, temps, fit du plateau) s'adaptent automatiquement.</p>
+      </div>
+
+      <!-- ─── GÉNÉRER ─── -->
+      <div class="guide-pane" id="guide-gen">
+        <h3>4 modes de génération</h3>
+        <div class="guide-card">
+          <div class="g-card-h">📝 <b>Texte</b></div>
+          <p>Décris ton objet en français ou anglais. Plus le prompt est précis, mieux c'est. Exemple : <i>"figurine cyberpunk de samouraï, armure noire mate avec néons cyan, posée sur un socle hexagonal, style low-poly"</i>.</p>
+          <p><b>Astuce :</b> ajoute un prompt négatif pour exclure (texte, logos, flou).</p>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">🖼 <b>Image</b></div>
+          <p>1 image (JPG/PNG). Préférer une image <b>frontale, nette, bien éclairée, fond neutre</b>. Les objets posés à plat fonctionnent mieux que les angles bizarres.</p>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">📐 <b>Multi-view (4 angles)</b></div>
+          <p>Le meilleur pour les modèles complexes. Ordre obligatoire : <b>Face → Gauche → Dos → Droite</b>. Si tu n'as qu'une image, clique <b>"✨ Générer 4 vues"</b> — l'IA Tripo crée les 3 autres angles automatiquement.</p>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">🔀 <b>Hybride</b></div>
+          <p>Image + description. Idéal pour orienter le style depuis une référence visuelle.</p>
+        </div>
+
+        <h3>Qualité Tripo</h3>
+        <ul>
+          <li><b>Turbo</b> · ~10 cr · 15s · qualité moyenne, pour tester</li>
+          <li><b>Standard</b> · ~20 cr · 2 min · bon compromis</li>
+          <li><b>HD</b> · ~40 cr · 5 min · ★ qualité maximale (recommandé pour impression)</li>
+        </ul>
+
+        <h3>Presets TRELLIS</h3>
+        <p>3 boutons en haut du panneau TRELLIS : <b>Rapide</b> (test), <b>Équilibré</b> (défaut), <b>Qualité Max</b> (1536³ + 50/50 steps + 100k poly + tex 4096 + guidance 9.5).</p>
+      </div>
+
+      <!-- ─── QUALITÉ ─── -->
+      <div class="guide-pane" id="guide-quality">
+        <h3>Pour les visages humains</h3>
+        <ol>
+          <li>Clique <b>👤 Preset Visages humains</b> (panneau Qualité Tripo) → force HD + Multi-view</li>
+          <li>Upload 4 photos (face, gauche, dos, droite) <b>nettes et bien éclairées</b></li>
+          <li>Génère</li>
+          <li>Une fois prêt → clique <b>⬆️ Raffiner HD</b> dans la barre de post-processing (en bas du viewer) → 2ème passe qui améliore visiblement les visages</li>
+        </ol>
+        <div class="guide-warn">⚠️ TRELLIS est <b>fondamentalement moyen sur les visages humains</b>. Pour les personnages, préfère toujours Tripo.</div>
+
+        <h3>Post-processing (après gen Tripo)</h3>
+        <ul>
+          <li><b>⬆️ Raffiner HD</b> — repasse en HD, améliore géométrie + textures</li>
+          <li><b>🔺 Low-poly</b> — réduit les polys pour impression rapide ou jeu</li>
+          <li><b>🧱 Lego / 📦 Voxel / 🕸 Voronoi</b> — stylisations</li>
+          <li><b>✂️ Segmenter</b> — découpe en parties séparées (utile pour multi-couleur ou pièces détachables)</li>
+          <li><b>🦾 Rigger</b> — ajoute squelette + animations (export GLB/FBX)</li>
+          <li><b>🎨 Re-texturer</b> — applique un nouveau style via prompt</li>
+        </ul>
+
+        <h3>Pour des objets propres pour impression 3D</h3>
+        <ul>
+          <li>Active toujours <b>Base plate</b> (fond plat)</li>
+          <li>Active <b>Auto-orient</b></li>
+          <li>Privilégie <b>Multi-view</b> plutôt que Image simple</li>
+          <li>Mode TRELLIS : active <b>Watertight</b> (fermeture des trous — obligatoire pour impression)</li>
+        </ul>
+      </div>
+
+      <!-- ─── EXPORT ─── -->
+      <div class="guide-pane" id="guide-export">
+        <h3>Quel format choisir ?</h3>
+        <table class="g-table">
+          <tr><th>Format</th><th>Couleur</th><th>Coût</th><th>Pour quoi</th></tr>
+          <tr><td><b>GLB</b> ★</td><td>✓</td><td class="g-free">Gratuit</td><td>★ Recommandé — Bambu Studio (depuis 2024), OrcaSlicer, Blender, Unity</td></tr>
+          <tr><td>STL</td><td>✗</td><td class="g-paid">~10 cr</td><td>Format historique — slicers anciens</td></tr>
+          <tr><td>3MF</td><td>✓</td><td class="g-paid">~10 cr</td><td>Multi-couleur Bambu AMS</td></tr>
+          <tr><td>FBX</td><td>✓</td><td class="g-paid">~10 cr</td><td>Animations, jeu vidéo</td></tr>
+          <tr><td>OBJ</td><td>✓</td><td class="g-paid">~10 cr</td><td>Format universel</td></tr>
+        </table>
+        <div class="guide-tip">💡 <b>GLB est gratuit ET accepté par Bambu Studio depuis 2024</b>. Utilise-le par défaut. Tu n'as <b>besoin de payer une conversion que si</b> ton slicer est ancien ou ne lit pas le GLB.</div>
+
+        <h3>Conversion locale dans Bambu Studio (0 crédit)</h3>
+        <ol>
+          <li>Export <b>GLB</b> (gratuit)</li>
+          <li>Ouvre Bambu Studio → <b>File → Import → 3D Model</b></li>
+          <li>Sélectionne ton .glb — Bambu l'importe et le rend prêt à découper</li>
+          <li>Tu peux exporter en .3mf depuis Bambu Studio (gratuit)</li>
+        </ol>
+
+        <h3>TRELLIS</h3>
+        <p>Export <b>GLB uniquement</b>. Le binaire est généré localement → 100% gratuit, format conservé tel quel.</p>
+      </div>
+
+      <!-- ─── IMPRIMER ─── -->
+      <div class="guide-pane" id="guide-print">
+        <h3>1. Configurer le profil dans FORM</h3>
+        <ol>
+          <li>Onglet <b>Filam.</b> (à droite)</li>
+          <li>Choisis ton imprimante Bambu (X2D par défaut)</li>
+          <li>Choisis ta buse (0.4 mm est le défaut)</li>
+          <li>Choisis le matériau (PLA, PETG, ABS…)</li>
+          <li>Ajuste le prix au kg si besoin</li>
+        </ol>
+
+        <h3>2. Lire les Specs</h3>
+        <p>Onglet <b>Specs</b> à droite → tu vois <b>~40 paramètres</b> calculés pour ton imprimante et ton matériau : temps d'impression, températures, vitesses, supports, coûts.</p>
+        <p>Clique <b>Copier les specs</b> en bas → tout est copié dans le presse-papier en format texte, prêt à coller dans Bambu Studio.</p>
+
+        <h3>3. Imprimer</h3>
+        <ol>
+          <li>Export GLB (gratuit)</li>
+          <li>Drag&drop dans Bambu Studio</li>
+          <li>Applique les paramètres du panneau Specs (couches, vitesses, support, ventilation)</li>
+          <li>Bambu Studio gère l'orientation + supports automatiquement</li>
+          <li>Pour les multi-couleur : utilise 3MF + AMS (X2D / X1 / P1S / A1)</li>
+        </ol>
+
+        <h3>4. Ouverture directe Bambu Studio</h3>
+        <p>Bouton <b>🎯 Bambu Studio</b> dans l'onglet Export → tente d'ouvrir le modèle dans Bambu via le protocole <code>bambu-studio://</code>. Marche si Bambu est installé localement.</p>
+      </div>
+
+      <!-- ─── FAQ ─── -->
+      <div class="guide-pane" id="guide-faq">
+        <h3>❓ Mes crédits Tripo s'épuisent vite</h3>
+        <p>Export en <b>GLB uniquement</b> (gratuit). Convertis ensuite localement dans Bambu Studio.</p>
+
+        <h3>❓ Les visages sont moches</h3>
+        <p>Voir l'onglet <b>★ Qualité</b>. Résumé : Tripo HD + Multi-view + Raffiner HD.</p>
+
+        <h3>❓ TRELLIS ne se connecte pas</h3>
+        <p>Vérifie que le serveur tourne :</p>
+        <ol>
+          <li><code>http://127.0.0.1:7960/</code> doit renvoyer <code>{"status":"ready"}</code></li>
+          <li>Lance avec : <code>python -m uvicorn api_spz.main_api:app --host 127.0.0.1 --port 7960</code></li>
+          <li>Active le venv avant : <code>.\venv\Scripts\Activate.ps1</code></li>
+          <li>Le point à côté de "TRELLIS Local" passe vert quand l'API répond</li>
+        </ol>
+
+        <h3>❓ L'historique ne marche plus</h3>
+        <p>Les modèles sont stockés en <b>IndexedDB</b> du navigateur. Si tu as effacé les données du site, c'est perdu. Sinon, clique sur un item de l'historique pour le recharger.</p>
+
+        <h3>❓ Le fichier exporté n'a pas d'extension</h3>
+        <p>Plus possible — depuis la PR #13, tous les downloads passent par un blob URL local avec extension forcée.</p>
+
+        <h3>❓ Mon modèle est trop grand pour mon imprimante</h3>
+        <p>Un warning orange apparaît dans Specs. Utilise le slider d'échelle en haut du viewer pour réduire (10-400%).</p>
+
+        <h3>❓ Supports nécessaires ou pas ?</h3>
+        <p>Section <b>Supports</b> dans Specs → calcul automatique des overhangs > 45°. Si > 5% de faces en surplomb, Tree supports sont recommandés.</p>
+
+        <h3>❓ Bouton "Bambu Studio" ne fait rien</h3>
+        <p>Bambu Studio doit être installé localement et avoir enregistré le protocole <code>bambu-studio://</code>. Si ça ne marche pas, télécharge le GLB et drag&drop manuellement dans Bambu.</p>
+      </div>
     </div>
   </div>
 </div>
