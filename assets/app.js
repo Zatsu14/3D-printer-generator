@@ -408,6 +408,12 @@ async function doE(fmt){
   const fmtLow=fmt.toLowerCase();
   const ext='.'+fmtLow;
   const base='form-3d_'+(Date.now().toString(36));
+  // Confirmation pour les exports payants (sauf TRELLIS qui est local)
+  const isPaidFormat=fmtLow!=='glb';
+  const usesTripoCredits=isPaidFormat&&backend==='tripo'&&!mUrls._trellis;
+  if(usesTripoCredits){
+    if(!confirm('💰 Cette conversion va consommer ~10 crédits Tripo.\n\n💡 Astuce : exporte en GLB (gratuit) et importe directement dans Bambu Studio — il accepte GLB depuis 2024.\n\nContinuer la conversion en '+fmt+' ?'))return;
+  }
   // Warning couleur sur STL si le modèle a des textures
   if(fmtLow==='stl'&&meshHasTextures()){
     if(!confirm('⚠️ STL ne supporte pas les couleurs.\n\nTon modèle a des textures qui seront perdues.\n\n3MF préserve la couleur et est natif Bambu Studio.\n\nContinuer en STL ?'))return;
@@ -865,6 +871,13 @@ function togC(){col=!col;apM();q('bc').classList.toggle('on',col)}
 function apM(){if(!mesh)return;mesh.traverse(n=>{if(n.isMesh){n.material.wireframe=wire;if(!wire){if(!col){n.material.map=null;n.material.color.set(0xc0c0c8);n.material.needsUpdate=true}else{if(n.userData.om)n.material.map=n.userData.om;n.material.color.set(0xffffff);n.material.needsUpdate=true}}}})}
 function openModal(id){q(id).classList.add('on')}
 function closeModal(id){q(id).classList.remove('on')}
+function setGuideTab(t){
+  document.querySelectorAll('.guide-tab').forEach((el,i)=>{
+    const onclick=el.getAttribute('onclick')||'';
+    el.classList.toggle('on',onclick.includes("'"+t+"'"));
+  });
+  document.querySelectorAll('.guide-pane').forEach(el=>el.classList.toggle('on',el.id==='guide-'+t));
+}
 let tT;
 function toast(msg,type=''){const t=q('toast');t.textContent=msg;t.className='toast on'+(type==='ok'?' ok':type===true||type==='err'?' err':'');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),3500)}
 
