@@ -327,7 +327,11 @@
   <div class="r-pane" id="rpane-exp">
     <div class="exp-wrap">
       <div class="lbl" style="margin-bottom:10px">Télécharger</div>
-      <div class="ex-cat">🖨 Pour impression Bambu Studio</div>
+      <div class="ex-cat">🆓 Conversion locale — 0 crédit</div>
+      <div class="ec ec-local dis" id="ex-stl-local" onclick="exportSTLLocal()"><div class="ei" style="background:rgba(118,185,0,.18);color:var(--ac)">STL</div><div style="flex:1"><div class="en2">STL local <span class="ex-badge ex-free">★ Gratuit</span></div><div class="ed2">Conversion instantanée navigateur · sans couleur</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--ac)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec ec-local dis" id="ex-obj-local" onclick="exportOBJLocal()"><div class="ei" style="background:rgba(118,185,0,.18);color:var(--ac)">OBJ</div><div style="flex:1"><div class="en2">OBJ local <span class="ex-badge ex-free">★ Gratuit</span></div><div class="ed2">Conversion instantanée · géométrie + UV</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--ac)"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+      <div class="ex-cat" style="margin-top:14px">🖨 Pour impression Bambu Studio</div>
       <div class="ec dis" id="ex-3mf" onclick="doE('3MF')"><div class="ei" style="background:rgba(79,195,247,.12);color:var(--blue)">3MF</div><div style="flex:1"><div class="en2">3MF <span class="ex-badge ex-free">★ Recommandé impression</span></div><div class="ed2">Couleur préservée · AMS multi-filament · ~10 cr</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="ec dis" id="ex-stl" onclick="doE('STL')"><div class="ei" style="background:rgba(212,245,66,.15);color:var(--ac)">STL</div><div style="flex:1"><div class="en2">STL <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Sans couleur · format historique</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
       <div class="ec dis" id="ex-obj" onclick="doE('OBJ')"><div class="ei" style="background:rgba(245,166,35,.12);color:var(--orange)">OBJ</div><div style="flex:1"><div class="en2">OBJ <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Couleur si MTL — universel</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -498,7 +502,20 @@
         </table>
         <div class="guide-tip">💡 Pour <b>imprimer directement</b> avec couleurs sur Bambu → <b>3MF</b> (~10 cr). Pour <b>économiser les crédits</b> → exporte GLB gratuit et convertis localement avec Blender.</div>
 
-        <h3>🆓 Convertir GLB → STL gratuitement (Blender)</h3>
+        <h3>⚡ Export local gratuit (recommandé) — 1 clic</h3>
+        <div class="guide-card">
+          <div class="g-card-h">🟢 <b>STL local</b> & <b>OBJ local</b> — directement dans FORM</div>
+          <p>FORM convertit le mesh Three.js en STL/OBJ <b>directement dans ton navigateur</b>, sans appel API, sans crédit :</p>
+          <ol>
+            <li>Génère ton modèle (Tripo ou TRELLIS)</li>
+            <li>Onglet <b>Export</b> à droite → section <b>🆓 Conversion locale</b></li>
+            <li>Clique <b>STL local</b> ou <b>OBJ local</b> → téléchargement instantané</li>
+            <li>Importe dans Bambu Studio</li>
+          </ol>
+          <p style="font-size:11px;color:var(--t3)">Limitation : sans couleur sur STL · OBJ exporte la géométrie + UV mais pas les matériaux PBR. Pour la couleur complète sur Bambu (AMS), utiliser 3MF (~10 cr) ou OBJ Tripo.</p>
+        </div>
+
+        <h3>🔧 Convertir GLB → STL via Blender (alternative)</h3>
         <ol>
           <li>Télécharge Blender (gratuit) : <a href="https://blender.org/download" target="_blank">blender.org</a></li>
           <li>Dans FORM : export <b>GLB</b> (gratuit)</li>
