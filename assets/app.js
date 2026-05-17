@@ -395,6 +395,130 @@ function meshHasTextures(){
   return has;
 }
 
+/* ══════════════════════════════════════════════
+   EXPORT LOCAL — STL binaire + OBJ depuis le mesh Three.js
+   Aucun appel API, aucun crédit, conversion 100% client.
+   ══════════════════════════════════════════════ */
+
+/* Récupère tous les triangles du mesh en coordonnées monde */
+function _collectTriangles(){
+  if(!mesh)return null;
+  const tris=[];
+  mesh.updateMatrixWorld(true);
+  const tmpA=new THREE.Vector3(),tmpB=new THREE.Vector3(),tmpC=new THREE.Vector3();
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry)return;
+    const g=n.geometry;const pos=g.attributes.position;const idx=g.index;
+    if(!pos)return;
+    const count=idx?idx.count:pos.count;
+    const m=n.matrixWorld;
+    for(let i=0;i<count;i+=3){
+      const i0=idx?idx.getX(i):i,i1=idx?idx.getX(i+1):i+1,i2=idx?idx.getX(i+2):i+2;
+      tmpA.fromBufferAttribute(pos,i0).applyMatrix4(m);
+      tmpB.fromBufferAttribute(pos,i1).applyMatrix4(m);
+      tmpC.fromBufferAttribute(pos,i2).applyMatrix4(m);
+      tris.push([tmpA.x,tmpA.y,tmpA.z,tmpB.x,tmpB.y,tmpB.z,tmpC.x,tmpC.y,tmpC.z]);
+    }
+  });
+  return tris;
+}
+
+/* STL binaire : 80 bytes header + uint32 count + (50 bytes par triangle) */
+function _buildBinarySTL(tris){
+  const n=tris.length;
+  const buf=new ArrayBuffer(84+n*50);
+  const dv=new DataView(buf);
+  // Header (80 bytes UTF-8, fillé de zéros)
+  const head='FORM 3D · binary STL · '+new Date().toISOString();
+  for(let i=0;i<Math.min(head.length,80);i++)dv.setUint8(i,head.charCodeAt(i));
+  // Triangle count
+  dv.setUint32(80,n,true);
+  let off=84;
+  for(let i=0;i<n;i++){
+    const t=tris[i];
+    // Normale via produit vectoriel
+    const ux=t[3]-t[0],uy=t[4]-t[1],uz=t[5]-t[2];
+    const vx=t[6]-t[0],vy=t[7]-t[1],vz=t[8]-t[2];
+    let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+    const len=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;nx/=len;ny/=len;nz/=len;
+    dv.setFloat32(off,nx,true);dv.setFloat32(off+4,ny,true);dv.setFloat32(off+8,nz,true);off+=12;
+    for(let j=0;j<9;j++){dv.setFloat32(off,t[j],true);off+=4}
+    dv.setUint16(off,0,true);off+=2; // attribute byte count
+  }
+  return buf;
+}
+
+async function exportSTLLocal(){
+  if(!mesh){toast('Génère d\'abord un modèle',true);return}
+  toast('Conversion locale STL…');
+  await new Promise(r=>setTimeout(r,30)); // laisse le toast s'afficher
+  const tris=_collectTriangles();
+  if(!tris||!tris.length){toast('Aucun mesh à exporter',true);return}
+  const buf=_buildBinarySTL(tris);
+  const filename='form-3d_'+Date.now().toString(36)+'.stl';
+  downloadBlob(new Blob([buf],{type:'application/sla'}),filename);
+  toast('✓ STL téléchargé ('+tris.length.toLocaleString('fr')+' triangles · gratuit)','ok');
+}
+
+/* OBJ texte avec normales + UVs (sans matériaux pour simplicité) */
+function _buildOBJ(){
+  if(!mesh)return null;
+  mesh.updateMatrixWorld(true);
+  const lines=['# FORM 3D OBJ export','# '+new Date().toISOString(),'o form_model'];
+  const vPos=[],vNorm=[],vUV=[],faces=[];
+  let vOff=1,vnOff=1,vtOff=1; // OBJ indices 1-based
+  const tmpV=new THREE.Vector3(),tmpN=new THREE.Vector3();
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry)return;
+    const g=n.geometry;const pos=g.attributes.position;const nor=g.attributes.normal;const uv=g.attributes.uv;const idx=g.index;
+    if(!pos)return;
+    const m=n.matrixWorld;const nm=new THREE.Matrix3().getNormalMatrix(m);
+    const hasN=!!nor,hasUV=!!uv;
+    const startV=vOff,startN=vnOff,startUV=vtOff;
+    // Vertices
+    for(let i=0;i<pos.count;i++){
+      tmpV.fromBufferAttribute(pos,i).applyMatrix4(m);
+      vPos.push('v '+tmpV.x.toFixed(6)+' '+tmpV.y.toFixed(6)+' '+tmpV.z.toFixed(6));
+    }
+    vOff+=pos.count;
+    // Normals
+    if(hasN){
+      for(let i=0;i<nor.count;i++){
+        tmpN.fromBufferAttribute(nor,i).applyMatrix3(nm).normalize();
+        vNorm.push('vn '+tmpN.x.toFixed(6)+' '+tmpN.y.toFixed(6)+' '+tmpN.z.toFixed(6));
+      }
+      vnOff+=nor.count;
+    }
+    // UVs
+    if(hasUV){
+      for(let i=0;i<uv.count;i++){vUV.push('vt '+uv.getX(i).toFixed(6)+' '+uv.getY(i).toFixed(6))}
+      vtOff+=uv.count;
+    }
+    // Faces
+    const fcount=idx?idx.count:pos.count;
+    for(let i=0;i<fcount;i+=3){
+      const i0=(idx?idx.getX(i):i)+startV,i1=(idx?idx.getX(i+1):i+1)+startV,i2=(idx?idx.getX(i+2):i+2)+startV;
+      const n0=hasN?(idx?idx.getX(i):i)+startN:null,n1=hasN?(idx?idx.getX(i+1):i+1)+startN:null,n2=hasN?(idx?idx.getX(i+2):i+2)+startN:null;
+      const u0=hasUV?(idx?idx.getX(i):i)+startUV:null,u1=hasUV?(idx?idx.getX(i+1):i+1)+startUV:null,u2=hasUV?(idx?idx.getX(i+2):i+2)+startUV:null;
+      const fmt=v=>v+(hasUV?'/'+(v-startV+startUV):'')+(hasN?'/'+(v-startV+startN):(hasUV?'':''));
+      faces.push('f '+fmt(i0)+' '+fmt(i1)+' '+fmt(i2));
+    }
+  });
+  return lines.concat(vPos,vNorm,vUV,faces).join('\n');
+}
+
+async function exportOBJLocal(){
+  if(!mesh){toast('Génère d\'abord un modèle',true);return}
+  toast('Conversion locale OBJ…');
+  await new Promise(r=>setTimeout(r,30));
+  const txt=_buildOBJ();
+  if(!txt){toast('Aucun mesh à exporter',true);return}
+  const filename='form-3d_'+Date.now().toString(36)+'.obj';
+  downloadBlob(new Blob([txt],{type:'text/plain'}),filename);
+  const tris=txt.split('\nf ').length-1;
+  toast('✓ OBJ téléchargé ('+tris.toLocaleString('fr')+' faces · gratuit)','ok');
+}
+
 /* Helper : télécharge un blob avec nom de fichier garanti */
 function downloadBlob(blob,filename){
   const url=URL.createObjectURL(blob);
@@ -412,7 +536,7 @@ async function doE(fmt){
   const isPaidFormat=fmtLow!=='glb';
   const usesTripoCredits=isPaidFormat&&backend==='tripo'&&!mUrls._trellis;
   if(usesTripoCredits){
-    if(!confirm('💰 Cette conversion va consommer ~10 crédits Tripo.\n\n💡 Astuce : exporte en GLB (gratuit) et importe directement dans Bambu Studio — il accepte GLB depuis 2024.\n\nContinuer la conversion en '+fmt+' ?'))return;
+    if(!confirm('💰 Cette conversion va consommer ~10 crédits Tripo.\n\n💡 Pour économiser : exporte en GLB (gratuit) et convertis localement avec Blender (File → Import glTF 2.0 → Export STL).\n\nContinuer la conversion en '+fmt+' ?'))return;
   }
   // Warning couleur sur STL si le modèle a des textures
   if(fmtLow==='stl'&&meshHasTextures()){
@@ -920,7 +1044,11 @@ async function loadGLB(buf){
   if(gltf.meshes){gltf.meshes.forEach(m=>m.primitives.forEach(p=>{const g=new THREE.BufferGeometry();const lA=(acc,comp)=>{const a=gltf.accessors[acc],bv=gltf.bufferViews[a.bufferView];const off=bs+(bv.byteOffset||0)+(a.byteOffset||0);return new Float32Array(buf,off,a.count*comp).slice()};if(p.attributes.POSITION!==undefined)g.setAttribute('position',new THREE.BufferAttribute(lA(p.attributes.POSITION,3),3));if(p.attributes.NORMAL!==undefined)g.setAttribute('normal',new THREE.BufferAttribute(lA(p.attributes.NORMAL,3),3));if(p.attributes.TEXCOORD_0!==undefined)g.setAttribute('uv',new THREE.BufferAttribute(lA(p.attributes.TEXCOORD_0,2),2));if(p.indices!==undefined){const a=gltf.accessors[p.indices],bv=gltf.bufferViews[a.bufferView];const off=bs+(bv.byteOffset||0)+(a.byteOffset||0);const idx=a.componentType===5123?new Uint16Array(buf,off,a.count):new Uint32Array(buf,off,a.count);g.setIndex(new THREE.BufferAttribute(new Uint32Array(idx),1))}if(!g.attributes.normal)g.computeVertexNormals();let mat=new THREE.MeshStandardMaterial({roughness:.5,metalness:.05,color:0xffffff});if(p.material!==undefined&&gltf.materials){const gm=gltf.materials[p.material];if(gm.pbrMetallicRoughness){const pbr=gm.pbrMetallicRoughness;if(pbr.baseColorTexture){const tidx=pbr.baseColorTexture.index;const src=gltf.textures?.[tidx]?.source;if(src!==undefined&&texs[src]){mat.map=texs[src];mat.map.needsUpdate=true}}if(pbr.baseColorFactor){const c=pbr.baseColorFactor;mat.color.set('#'+[c[0],c[1],c[2]].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join(''))}if(pbr.metallicFactor!==undefined)mat.metalness=pbr.metallicFactor;if(pbr.roughnessFactor!==undefined)mat.roughness=pbr.roughnessFactor}}const mn=new THREE.Mesh(g,mat);mn.userData.om=mat.map;group.add(mn)}))}
   if(!group.children.length){phMesh();return}mesh=group;finM()}catch(e){phMesh()}
 }
-function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THREE.Vector3();box.getSize(sz);const sc=2.2/Math.max(sz.x,sz.y,sz.z);const center=new THREE.Vector3();box.getCenter(center);mesh.position.sub(center.multiplyScalar(sc));mesh.scale.setScalar(sc);mesh.userData.baseScale=sc;scene.add(mesh);rx=ry=panX=panY=0;modelScale=1;const sw=q('scale-wrap');if(sw)sw.style.display='flex';const sl=q('scale-sl');if(sl)sl.value=100;const ll=q('scale-lbl');if(ll)ll.textContent='100%'}
+function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THREE.Vector3();box.getSize(sz);const sc=2.2/Math.max(sz.x,sz.y,sz.z);const center=new THREE.Vector3();box.getCenter(center);mesh.position.sub(center.multiplyScalar(sc));mesh.scale.setScalar(sc);mesh.userData.baseScale=sc;scene.add(mesh);rx=ry=panX=panY=0;modelScale=1;const sw=q('scale-wrap');if(sw)sw.style.display='flex';const sl=q('scale-sl');if(sl)sl.value=100;const ll=q('scale-lbl');if(ll)ll.textContent='100%';
+  // Active toujours les exports locaux dès qu'un mesh est chargé (peu importe le backend)
+  q('ex-stl-local')?.classList.remove('dis');
+  q('ex-obj-local')?.classList.remove('dis');
+}
 function phMesh(){mesh=new THREE.Mesh(new THREE.TorusKnotGeometry(.55,.18,256,32),new THREE.MeshStandardMaterial({color:0xc8e83a,roughness:.1,metalness:.7}));scene.add(mesh)}
 
 /* ── MOBILE NAV ── */
