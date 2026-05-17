@@ -327,12 +327,16 @@
   <div class="r-pane" id="rpane-exp">
     <div class="exp-wrap">
       <div class="lbl" style="margin-bottom:10px">Télécharger</div>
-      <div class="ec dis" id="ex-glb" onclick="doE('glb')"><div class="ei" style="background:rgba(255,79,79,.12);color:var(--red)">GLB</div><div style="flex:1"><div class="en2">GLB / GLTF <span class="ex-badge ex-free">★ Recommandé · Gratuit</span></div><div class="ed2">Bambu Studio (depuis 2024) · Blender · Web</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ec dis" id="ex-stl" onclick="doE('STL')"><div class="ei" style="background:rgba(212,245,66,.15);color:var(--ac)">STL</div><div style="flex:1"><div class="en2">STL <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Sans couleur · Bambu/Orca/Prusa</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ec dis" id="ex-3mf" onclick="doE('3MF')"><div class="ei" style="background:rgba(79,195,247,.12);color:var(--blue)">3MF</div><div style="flex:1"><div class="en2">3MF <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Couleur · Bambu AMS multi-filament</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ec dis" id="ex-fbx" onclick="doE('FBX')"><div class="ei" style="background:rgba(176,110,243,.12);color:var(--purple)">FBX</div><div style="flex:1"><div class="en2">FBX <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Blender · Maya · 3dsMax · Unity</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ec dis" id="ex-obj" onclick="doE('OBJ')"><div class="ei" style="background:rgba(245,166,35,.12);color:var(--orange)">OBJ</div><div style="flex:1"><div class="en2">OBJ <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Format universel</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
-      <div class="ex-tip">💡 <b>GLB est gratuit</b> et accepté par Bambu Studio depuis 2024 — préfère ce format pour économiser tes crédits Tripo</div>
+      <div class="ex-cat">🖨 Pour impression Bambu Studio</div>
+      <div class="ec dis" id="ex-3mf" onclick="doE('3MF')"><div class="ei" style="background:rgba(79,195,247,.12);color:var(--blue)">3MF</div><div style="flex:1"><div class="en2">3MF <span class="ex-badge ex-free">★ Recommandé impression</span></div><div class="ed2">Couleur préservée · AMS multi-filament · ~10 cr</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec dis" id="ex-stl" onclick="doE('STL')"><div class="ei" style="background:rgba(212,245,66,.15);color:var(--ac)">STL</div><div style="flex:1"><div class="en2">STL <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Sans couleur · format historique</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec dis" id="ex-obj" onclick="doE('OBJ')"><div class="ei" style="background:rgba(245,166,35,.12);color:var(--orange)">OBJ</div><div style="flex:1"><div class="en2">OBJ <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Couleur si MTL — universel</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+      <div class="ex-cat" style="margin-top:14px">🎨 Pour Blender / Web / autres outils</div>
+      <div class="ec dis" id="ex-glb" onclick="doE('glb')"><div class="ei" style="background:rgba(255,79,79,.12);color:var(--red)">GLB</div><div style="flex:1"><div class="en2">GLB / GLTF <span class="ex-badge ex-free">Gratuit</span></div><div class="ed2">Blender · Unity · Web · Textures PBR intégrées</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="ec dis" id="ex-fbx" onclick="doE('FBX')"><div class="ei" style="background:rgba(176,110,243,.12);color:var(--purple)">FBX</div><div style="flex:1"><div class="en2">FBX <span class="ex-badge ex-paid">~10 crédits</span></div><div class="ed2">Maya · 3dsMax · animation</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+      <div class="ex-tip">💡 <b>Bambu Studio n'accepte pas le GLB</b> (formats : 3MF / STL / OBJ / STEP / SVG / AMF). Pour économiser des crédits : exporte GLB (gratuit) et convertis en STL via Blender — voir le Guide 📖</div>
       <div style="height:1px;background:var(--b);margin:8px 0"></div>
       <div class="ec dis" id="ex-bambu" onclick="openBambu()"><div class="ei" style="background:rgba(118,185,0,.12);color:var(--ac)">🎯</div><div><div class="en2">Bambu Studio</div><div class="ed2">Ouvrir via bambu-studio://</div></div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
@@ -480,27 +484,50 @@
 
       <!-- ─── EXPORT ─── -->
       <div class="guide-pane" id="guide-export">
+        <h3>Bambu Studio — Formats acceptés</h3>
+        <p>Bambu Studio importe : <b>3MF · STL · STEP · SVG · OBJ · AMF</b>. <b>Il n'importe PAS le GLB.</b></p>
+
         <h3>Quel format choisir ?</h3>
         <table class="g-table">
-          <tr><th>Format</th><th>Couleur</th><th>Coût</th><th>Pour quoi</th></tr>
-          <tr><td><b>GLB</b> ★</td><td>✓</td><td class="g-free">Gratuit</td><td>★ Recommandé — Bambu Studio (depuis 2024), OrcaSlicer, Blender, Unity</td></tr>
-          <tr><td>STL</td><td>✗</td><td class="g-paid">~10 cr</td><td>Format historique — slicers anciens</td></tr>
-          <tr><td>3MF</td><td>✓</td><td class="g-paid">~10 cr</td><td>Multi-couleur Bambu AMS</td></tr>
-          <tr><td>FBX</td><td>✓</td><td class="g-paid">~10 cr</td><td>Animations, jeu vidéo</td></tr>
-          <tr><td>OBJ</td><td>✓</td><td class="g-paid">~10 cr</td><td>Format universel</td></tr>
+          <tr><th>Format</th><th>Couleur</th><th>Coût</th><th>Usage</th></tr>
+          <tr><td><b>3MF</b> ★</td><td>✓</td><td class="g-paid">~10 cr</td><td>★ <b>Recommandé impression</b> — Bambu Studio + AMS multi-couleur</td></tr>
+          <tr><td>STL</td><td>✗</td><td class="g-paid">~10 cr</td><td>Bambu / Orca / Prusa — sans couleur</td></tr>
+          <tr><td>OBJ</td><td>✓ (MTL)</td><td class="g-paid">~10 cr</td><td>Bambu compatible · couleur via fichier MTL</td></tr>
+          <tr><td><b>GLB</b></td><td>✓</td><td class="g-free">Gratuit</td><td><b>Pas pour Bambu</b> — Blender, Unity, Web, conversion locale</td></tr>
+          <tr><td>FBX</td><td>✓</td><td class="g-paid">~10 cr</td><td>Animation — Maya, 3dsMax, Unity</td></tr>
         </table>
-        <div class="guide-tip">💡 <b>GLB est gratuit ET accepté par Bambu Studio depuis 2024</b>. Utilise-le par défaut. Tu n'as <b>besoin de payer une conversion que si</b> ton slicer est ancien ou ne lit pas le GLB.</div>
+        <div class="guide-tip">💡 Pour <b>imprimer directement</b> avec couleurs sur Bambu → <b>3MF</b> (~10 cr). Pour <b>économiser les crédits</b> → exporte GLB gratuit et convertis localement avec Blender.</div>
 
-        <h3>Conversion locale dans Bambu Studio (0 crédit)</h3>
+        <h3>🆓 Convertir GLB → STL gratuitement (Blender)</h3>
         <ol>
-          <li>Export <b>GLB</b> (gratuit)</li>
-          <li>Ouvre Bambu Studio → <b>File → Import → 3D Model</b></li>
-          <li>Sélectionne ton .glb — Bambu l'importe et le rend prêt à découper</li>
-          <li>Tu peux exporter en .3mf depuis Bambu Studio (gratuit)</li>
+          <li>Télécharge Blender (gratuit) : <a href="https://blender.org/download" target="_blank">blender.org</a></li>
+          <li>Dans FORM : export <b>GLB</b> (gratuit)</li>
+          <li>Ouvre Blender → <b>File → Import → glTF 2.0</b> → sélectionne ton .glb</li>
+          <li><b>File → Export → STL</b> (ou Wavefront OBJ pour garder la couleur)</li>
+          <li>Importe le STL dans Bambu Studio</li>
         </ol>
+        <div class="guide-card">
+          <div class="g-card-h">⚡ Alternative : convertisseurs en ligne</div>
+          <p>Si tu n'as pas Blender, ces convertisseurs gratuits acceptent GLB :</p>
+          <ul>
+            <li><a href="https://anyconv.com/glb-to-stl-converter/" target="_blank">anyconv.com/glb-to-stl</a></li>
+            <li><a href="https://imagetostl.com/convert/file/glb/to/stl" target="_blank">imagetostl.com (glb→stl)</a></li>
+            <li><a href="https://products.aspose.app/3d/conversion/glb-to-stl" target="_blank">aspose.app (glb→stl)</a></li>
+          </ul>
+          <p style="color:var(--orange);font-size:11px">⚠️ Ces sites uploadent ton mesh sur leurs serveurs — pour des modèles confidentiels, préfère Blender en local.</p>
+        </div>
 
-        <h3>TRELLIS</h3>
-        <p>Export <b>GLB uniquement</b>. Le binaire est généré localement → 100% gratuit, format conservé tel quel.</p>
+        <h3>🎨 Préserver les couleurs/textures</h3>
+        <p>Pour conserver les couleurs/textures à l'impression :</p>
+        <ul>
+          <li><b>3MF</b> (via FORM, ~10 cr) — natif Bambu Studio multi-couleur</li>
+          <li><b>OBJ + MTL</b> (via FORM, ~10 cr) — Bambu Studio lit le fichier MTL</li>
+          <li><b>GLB → OBJ via Blender</b> (gratuit) — exporte avec "Materials" coché</li>
+        </ul>
+        <p>STL ne supporte <b>aucune</b> couleur — c'est juste une géométrie.</p>
+
+        <h3>TRELLIS Local</h3>
+        <p>Export <b>GLB uniquement</b> (généré localement, gratuit). Pour imprimer : convertis en STL/OBJ via Blender ou un convertisseur en ligne, puis importe dans Bambu Studio.</p>
       </div>
 
       <!-- ─── IMPRIMER ─── -->
@@ -534,7 +561,10 @@
       <!-- ─── FAQ ─── -->
       <div class="guide-pane" id="guide-faq">
         <h3>❓ Mes crédits Tripo s'épuisent vite</h3>
-        <p>Export en <b>GLB uniquement</b> (gratuit). Convertis ensuite localement dans Bambu Studio.</p>
+        <p>Export en <b>GLB</b> (gratuit) puis convertis localement avec <b>Blender</b> (gratuit aussi) : <code>File → Import glTF 2.0</code> → <code>File → Export STL</code>. Voir l'onglet <b>Export</b> pour le workflow détaillé.</p>
+
+        <h3>❓ Bambu Studio n'importe pas mon GLB</h3>
+        <p>Normal — Bambu Studio n'accepte pas le GLB. Formats supportés : <b>3MF, STL, STEP, SVG, OBJ, AMF</b>. Soit tu exportes directement en 3MF/STL/OBJ depuis FORM (~10 cr), soit tu convertis ton GLB localement via Blender (gratuit).</p>
 
         <h3>❓ Les visages sont moches</h3>
         <p>Voir l'onglet <b>★ Qualité</b>. Résumé : Tripo HD + Multi-view + Raffiner HD.</p>

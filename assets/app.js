@@ -412,7 +412,7 @@ async function doE(fmt){
   const isPaidFormat=fmtLow!=='glb';
   const usesTripoCredits=isPaidFormat&&backend==='tripo'&&!mUrls._trellis;
   if(usesTripoCredits){
-    if(!confirm('💰 Cette conversion va consommer ~10 crédits Tripo.\n\n💡 Astuce : exporte en GLB (gratuit) et importe directement dans Bambu Studio — il accepte GLB depuis 2024.\n\nContinuer la conversion en '+fmt+' ?'))return;
+    if(!confirm('💰 Cette conversion va consommer ~10 crédits Tripo.\n\n💡 Pour économiser : exporte en GLB (gratuit) et convertis localement avec Blender (File → Import glTF 2.0 → Export STL).\n\nContinuer la conversion en '+fmt+' ?'))return;
   }
   // Warning couleur sur STL si le modèle a des textures
   if(fmtLow==='stl'&&meshHasTextures()){
