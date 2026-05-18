@@ -223,6 +223,14 @@ body.focus-mode .C{grid-column:1}
 .scale-wrap{display:none;align-items:center;gap:5px}
 .scale-wrap input[type=range]{width:72px;accent-color:var(--ac);cursor:pointer}
 .scale-lbl{font-family:var(--mono);font-size:12px;color:var(--t2);min-width:32px;text-align:right}
+.scale-mm{
+  width:60px;padding:3px 6px;border-radius:6px;
+  background:var(--bg3);border:1.5px solid var(--b2);
+  font-family:var(--mono);font-size:11px;color:var(--ac);
+  text-align:right;outline:none;transition:all .15s var(--ease);
+  margin-left:6px;
+}
+.scale-mm:focus{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac3)}
 /* ── COMPARE OVERLAY ── */
 .cmp-overlay{position:absolute;inset:0;display:none;z-index:4;pointer-events:none}
 .cmp-overlay.on{display:block}
@@ -732,6 +740,13 @@ body::before{
   100%{box-shadow:0 0 0 0 var(--purple),0 0 0 0 transparent}
 }
 .ta.prompt-flash{animation:prompt-flash .8s var(--ease)}
+
+/* Base HUD */
+.base-hud{width:280px}
+.base-types{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.base-type{padding:7px 4px;border-radius:7px;border:1.5px solid var(--b2);background:var(--bg3);color:var(--t2);font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s var(--ease);text-align:center}
+.base-type:hover{color:var(--t)}
+.base-type.on{border-color:var(--ac);color:var(--ac);background:var(--ac3);box-shadow:0 0 10px rgba(158,255,58,.2)}
 
 /* Paint HUD */
 .paint-hud{width:280px}

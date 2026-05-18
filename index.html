@@ -232,13 +232,16 @@
     <div class="vtb-r" style="gap:8px">
       <div class="scale-wrap" id="scale-wrap">
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--t3)"><path d="M21 21l-6-6m6 6v-4.5M21 21h-4.5"/><path d="M3 3l6 6M3 3v4.5M3 3h4.5"/></svg>
-        <input type="range" min="10" max="400" value="100" id="scale-sl" oninput="setScale(this.value)">
+        <input type="range" min="10" max="400" value="100" id="scale-sl" oninput="setScale(this.value)" aria-label="Échelle">
         <span class="scale-lbl" id="scale-lbl">100%</span>
+        <input type="number" min="5" max="500" step="1" id="scale-mm-inp" placeholder="mm" title="Définir la hauteur en mm (autosize)" class="scale-mm" onchange="setHeightMm(+this.value)" aria-label="Hauteur en millimètres">
       </div>
       <div style="display:flex;gap:4px">
         <button class="ib" id="b-import" onclick="q('import-file').click()" title="Importer GLB/STL/OBJ/3MF" aria-label="Importer un modèle 3D"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
         <button class="ib" id="b-orient" onclick="autoOrient()" disabled title="Auto-orientation pour impression"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M12 7v5l3 3"/></svg></button>
         <button class="ib" id="b-measure" onclick="toggleMeasure()" disabled title="Outils de mesure"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 6L9 18l-5-5"/><path d="M2 9l3 3"/></svg></button>
+        <button class="ib on" id="b-rotate" onclick="toggleAutoRotate()" title="Rotation auto on/off" aria-label="Toggle rotation automatique"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><circle cx="12" cy="12" r="2"/></svg></button>
+        <button class="ib" id="b-base" onclick="toggleBasePanel()" disabled title="Ajouter un socle / plateforme" aria-label="Socle"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="18" rx="9" ry="3"/><path d="M3 18v-1M21 18v-1"/></svg></button>
         <button class="ib" id="b-section" onclick="toggleSection()" disabled title="Section transversale"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
         <button class="ib" id="b-hollow" onclick="toggleHollowPanel()" disabled title="Hollowing (évider modèle)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/></svg></button>
         <button class="ib" id="b-light" onclick="toggleLightPanel()" disabled title="Éclairage du viewer"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
@@ -342,6 +345,35 @@
         Drain hole automatique
       </label>
       <div class="hollow-stats" id="hollow-stats">Charge un modèle pour voir les estimations</div>
+    </div>
+
+    <!-- Panneau Socle / Plateforme -->
+    <div class="meas-hud base-hud" id="base-hud">
+      <div class="meas-head">
+        <span>🏛 Socle / Plateforme</span>
+        <button class="meas-close" onclick="toggleBasePanel()">✕</button>
+      </div>
+      <div class="meas-help">Ajoute une base sous la figurine pour qu'elle tienne debout. Idéal pour les figurines fines ou instables.</div>
+      <div class="base-types">
+        <button class="base-type on" data-t="disc" onclick="setBaseType('disc')" aria-label="Socle disque">⬤ Disque</button>
+        <button class="base-type" data-t="hex" onclick="setBaseType('hex')" aria-label="Socle hexagonal">⬡ Hexa</button>
+        <button class="base-type" data-t="square" onclick="setBaseType('square')" aria-label="Socle carré">▢ Carré</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-family:var(--mono);font-size:11px;color:var(--t2);min-width:60px">Épaisseur</label>
+        <input type="range" min="1" max="15" step="0.5" value="3" id="base-thick-sl" oninput="setBaseThickness(+this.value)" style="flex:1;accent-color:var(--ac)" aria-label="Épaisseur socle">
+        <span id="base-thick-val" style="font-family:var(--mono);font-size:11px;color:var(--ac);min-width:45px;text-align:right">3.0 mm</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-family:var(--mono);font-size:11px;color:var(--t2);min-width:60px">Marge</label>
+        <input type="range" min="0" max="100" step="1" value="20" id="base-margin-sl" oninput="setBaseMargin(+this.value)" style="flex:1;accent-color:var(--ac)" aria-label="Marge socle">
+        <span id="base-margin-val" style="font-family:var(--mono);font-size:11px;color:var(--ac);min-width:40px;text-align:right">20%</span>
+      </div>
+      <div id="base-stats" class="hollow-stats" style="font-family:var(--mono);font-size:11px;color:var(--t3);padding:6px 0">Clique « Ajouter » pour créer le socle</div>
+      <div style="display:flex;gap:5px">
+        <button class="meas-clear" onclick="clearBase()" style="flex:1">↺ Retirer</button>
+        <button class="meas-clear" onclick="addBase()" style="flex:2;border-color:var(--ac);color:var(--ac)">＋ Ajouter / Mettre à jour</button>
+      </div>
     </div>
 
     <!-- Panneau Paint -->
