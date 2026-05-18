@@ -396,6 +396,102 @@ function meshHasTextures(){
 }
 
 /* ══════════════════════════════════════════════
+   PROMPT ENHANCER — templates locaux, gratuits
+   Enrichit un prompt court avec modificateurs de style + qualité
+   et auto-traduit FR -> EN (mots-clés) pour optimiser Tripo
+   ══════════════════════════════════════════════ */
+
+/* Dictionnaire FR -> EN (mots-clés courants pour Tripo) */
+const FR_EN={
+  // Objets
+  'épée':'sword','couteau':'knife','arme':'weapon','dague':'dagger','hache':'axe','arc':'bow','flèche':'arrow','bouclier':'shield','armure':'armor','casque':'helmet','figurine':'figurine','statue':'statue','vase':'vase','tasse':'cup','assiette':'plate','bol':'bowl','théière':'teapot','lampe':'lamp','bougie':'candle','chandelier':'candelabra','horloge':'clock','montre':'watch','clé':'key','serrure':'lock','coffre':'chest','livre':'book','rouleau':'scroll','parchemin':'parchment','potion':'potion','flacon':'flask','baguette':'wand','bâton':'staff','sceptre':'scepter','couronne':'crown','bijou':'jewel','collier':'necklace','bague':'ring','anneau':'ring','pendentif':'pendant','médaille':'medal','trophée':'trophy','masque':'mask',
+  // Créatures
+  'dragon':'dragon','chevalier':'knight','samouraï':'samurai','ninja':'ninja','sorcier':'wizard','mage':'mage','elfe':'elf','nain':'dwarf','orc':'orc','gobelin':'goblin','squelette':'skeleton','zombie':'zombie','vampire':'vampire','loup':'wolf','ours':'bear','lion':'lion','tigre':'tiger','aigle':'eagle','dauphin':'dolphin','requin':'shark','poulpe':'octopus','araignée':'spider','scarabée':'beetle','phénix':'phoenix','licorne':'unicorn','sirène':'mermaid','centaure':'centaur',
+  // Mécanique / véhicules
+  'voiture':'car','moto':'motorcycle','vélo':'bicycle','vaisseau':'spaceship','fusée':'rocket','robot':'robot','drone':'drone','mecha':'mecha','char':'tank','avion':'airplane','hélicoptère':'helicopter','bateau':'boat','sous-marin':'submarine','train':'train','engrenage':'gear','rouage':'cog','piston':'piston','clé à molette':'wrench','tournevis':'screwdriver','marteau':'hammer',
+  // Mobilier
+  'chaise':'chair','table':'table','fauteuil':'armchair','canapé':'couch','lit':'bed','étagère':'shelf','armoire':'cabinet','tabouret':'stool','bureau':'desk','miroir':'mirror','cadre':'frame',
+  // Nature
+  'arbre':'tree','fleur':'flower','rose':'rose','champignon':'mushroom','feuille':'leaf','pierre':'rock','cristal':'crystal','roche':'stone','coquillage':'seashell','plante':'plant','cactus':'cactus','fougère':'fern','racine':'root',
+  // Bâtiments
+  'maison':'house','château':'castle','tour':'tower','donjon':'dungeon','pont':'bridge','temple':'temple','église':'church','phare':'lighthouse','moulin':'windmill','cabane':'hut','tente':'tent','igloo':'igloo','pyramide':'pyramid','obélisque':'obelisk',
+  // Matériaux
+  'or':'gold','argent':'silver','bronze':'bronze','cuivre':'copper','fer':'iron','acier':'steel','platine':'platinum','bois':'wood','pierre':'stone','marbre':'marble','jade':'jade','rubis':'ruby','émeraude':'emerald','saphir':'sapphire','diamant':'diamond','obsidienne':'obsidian','cuir':'leather','tissu':'fabric','soie':'silk','verre':'glass','cristal':'crystal',
+  // Couleurs
+  'rouge':'red','bleu':'blue','vert':'green','jaune':'yellow','noir':'black','blanc':'white','gris':'gray','orange':'orange','violet':'purple','rose':'pink','marron':'brown','doré':'golden','argenté':'silver',
+  // Adjectifs
+  'médiéval':'medieval','futuriste':'futuristic','antique':'ancient','moderne':'modern','baroque':'baroque','art nouveau':'art nouveau','art déco':'art deco','steampunk':'steampunk','cyberpunk':'cyberpunk','gothique':'gothic','viking':'viking','japonais':'japanese','chinois':'chinese','egyptien':'egyptian','grec':'greek','romain':'roman','ornementé':'ornate','sculpté':'carved','gravé':'engraved','poli':'polished','rouillé':'rusted','vieilli':'weathered','brillant':'shiny','mat':'matte','transparent':'transparent','translucide':'translucent',
+};
+
+/* Modificateurs de style à ajouter */
+const PROMPT_STYLES={
+  realistic:{label:'Réaliste',mods:['highly detailed','realistic','photorealistic','intricate details','high quality','8K','professional 3D model','PBR materials']},
+  stylized:{label:'Stylisé',mods:['stylized','clean topology','game-ready','detailed textures','vibrant colors','illustrated','character design']},
+  lowpoly:{label:'Low-poly',mods:['low-poly','flat shading','clean geometry','game asset','minimalist','geometric','crisp edges']},
+  cartoon:{label:'Cartoon',mods:['cartoon style','exaggerated proportions','bold colors','toon shading','animated','playful']},
+  cinematic:{label:'Cinématique',mods:['cinematic','dramatic lighting','moody atmosphere','volumetric','ultra detailed','epic','film quality']},
+  fantasy:{label:'Fantasy',mods:['fantasy','magical','ornate details','rune-engraved','glowing accents','medieval-inspired','enchanted']},
+  scifi:{label:'Sci-Fi',mods:['sci-fi','futuristic','high-tech','sleek','neon accents','holographic details','advanced materials']},
+  steampunk:{label:'Steampunk',mods:['steampunk','brass and copper','intricate gears','victorian','industrial','bronze patina','exposed mechanisms']},
+};
+
+function _detectFrench(text){
+  return /[éèêëàâäîïôöùûüç]|\b(le|la|les|un|une|des|du|de|et|avec|pour|sur|sous|dans)\b/i.test(text);
+}
+
+function _translateFR2EN(text){
+  let out=text;
+  // Tri par longueur décroissante pour éviter de matcher des sous-mots
+  const keys=Object.keys(FR_EN).sort((a,b)=>b.length-a.length);
+  keys.forEach(fr=>{
+    const en=FR_EN[fr];
+    const re=new RegExp('\\b'+fr.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi');
+    out=out.replace(re,en);
+  });
+  return out;
+}
+
+function enhancePrompt(){
+  // Trouve quelle textarea utiliser selon le mode actif
+  const ta=mode==='hybrid'?q('prompt2'):q('prompt');
+  if(!ta){toast('Aucune zone prompt active',true);return}
+  const raw=ta.value.trim();
+  if(!raw){toast('Écris d\'abord un prompt court',true);return}
+  // Détection et traduction si FR
+  const wasFrench=_detectFrench(raw);
+  let base=wasFrench?_translateFR2EN(raw):raw;
+  base=base.replace(/\s+/g,' ').trim();
+  // Style sélectionné dans le picker
+  const style=PROMPT_STYLES[currentEnhanceStyle]||PROMPT_STYLES.realistic;
+  const mods=style.mods.slice();
+  // Si manque de matière/éclairage explicite, en ajouter
+  if(!/(metal|wood|plastic|glass|fabric|leather|stone|gold|silver|bronze|cyber)/i.test(base))mods.push('professional materials');
+  if(!/(light|glow|shine|reflect|cinematic|dramatic)/i.test(base))mods.push('soft studio lighting');
+  // Assemble
+  const enhanced=base+', '+mods.join(', ');
+  ta.value=enhanced;
+  // Trigger oninput pour le compteur de caracteres
+  ta.dispatchEvent(new Event('input',{bubbles:true}));
+  toast('✨ Prompt enrichi'+(wasFrench?' + traduit EN':'')+' (style : '+style.label+')','ok');
+  // Animation flash
+  ta.classList.add('prompt-flash');setTimeout(()=>ta.classList.remove('prompt-flash'),800);
+}
+
+let currentEnhanceStyle='realistic';
+function setEnhanceStyle(s){
+  currentEnhanceStyle=s;
+  document.querySelectorAll('.enh-style').forEach(el=>el.classList.toggle('on',el.dataset.style===s));
+}
+
+function toggleEnhancerPanel(){
+  q('enh-pop')?.classList.toggle('on');
+}
+function renderEnhancerStyles(){
+  const el=q('enh-styles');if(!el)return;
+  el.innerHTML=Object.entries(PROMPT_STYLES).map(([k,p])=>`<div class="enh-style${k===currentEnhanceStyle?' on':''}" data-style="${k}" onclick="setEnhanceStyle('${k}')">${p.label}</div>`).join('');
+}
+
+/* ══════════════════════════════════════════════
    IMPORT MODÈLES EXTERNES  (GLB / STL / OBJ / 3MF)
    100% client-side, aucun appel API.
    ══════════════════════════════════════════════ */
@@ -2156,6 +2252,7 @@ window.addEventListener('load',()=>{
   initMatGrid();
   renderLightPanel();
   renderPaintHistory();
+  renderEnhancerStyles();
   // Restore profil imprimante
   const savedPrinter=localStorage.getItem('form3d_printer');
   if(savedPrinter&&PRINTERS[savedPrinter])selectedPrinter=savedPrinter;
