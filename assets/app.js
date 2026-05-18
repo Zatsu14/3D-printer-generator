@@ -1346,6 +1346,172 @@ let tT;
 function toast(msg,type=''){const t=q('toast');t.textContent=msg;t.className='toast on'+(type==='ok'?' ok':type===true||type==='err'?' err':'');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),3500)}
 
 /* ══════════════════════════════════════════════
+   LIGHTING PRESETS — 5 ambiances
+   ══════════════════════════════════════════════ */
+let lightGroup=null;
+let currentLighting=localStorage.getItem('form3d_lighting')||'neon';
+const LIGHTING_PRESETS={
+  neon:{
+    name:'Neon (défaut)',
+    bg:0x080809,exposure:1.8,
+    lights:[
+      {type:'hemi',sky:0xb3d4ff,ground:0x1a1a2e,intensity:0.7},
+      {type:'dir',color:0xffffff,intensity:2.8,pos:[3,8,5]},
+      {type:'dir',color:0x88aaff,intensity:0.9,pos:[-6,-2,-3]},
+      {type:'dir',color:0xd4f542,intensity:0.8,pos:[0,3,-8]},
+      {type:'dir',color:0xfff8f0,intensity:0.5,pos:[0,-1,6]},
+    ],
+  },
+  studio:{
+    name:'Studio',
+    bg:0x141418,exposure:1.5,
+    lights:[
+      {type:'hemi',sky:0xffffff,ground:0x666666,intensity:0.6},
+      {type:'dir',color:0xffffff,intensity:3.0,pos:[5,8,5]},
+      {type:'dir',color:0xffffff,intensity:1.5,pos:[-5,4,2]},
+      {type:'dir',color:0xffffff,intensity:1.0,pos:[0,-3,3]},
+    ],
+  },
+  dramatic:{
+    name:'Dramatique',
+    bg:0x05050a,exposure:1.4,
+    lights:[
+      {type:'amb',color:0x202030,intensity:0.3},
+      {type:'dir',color:0xffe0c0,intensity:4.0,pos:[6,5,3]},
+      {type:'dir',color:0x4060ff,intensity:1.2,pos:[-4,2,-5]},
+      {type:'dir',color:0xff4080,intensity:0.8,pos:[0,1,-8]},
+    ],
+  },
+  outdoor:{
+    name:'Plein air',
+    bg:0xa8c8e8,exposure:1.6,
+    lights:[
+      {type:'hemi',sky:0x87ceeb,ground:0xb8860b,intensity:1.2},
+      {type:'dir',color:0xfff5e0,intensity:3.5,pos:[4,10,4]},
+      {type:'dir',color:0x4080ff,intensity:0.5,pos:[-3,3,-3]},
+    ],
+  },
+  showcase:{
+    name:'Vitrine',
+    bg:0xf5f5f5,exposure:1.2,
+    lights:[
+      {type:'amb',color:0xffffff,intensity:0.7},
+      {type:'dir',color:0xffffff,intensity:2.5,pos:[3,6,4]},
+      {type:'dir',color:0xffffff,intensity:1.5,pos:[-3,6,-4]},
+      {type:'dir',color:0xffffff,intensity:1.0,pos:[0,-2,5]},
+    ],
+  },
+};
+
+function applyLightingPreset(name){
+  if(!lightGroup||!LIGHTING_PRESETS[name])return;
+  // Nettoyage
+  while(lightGroup.children.length)lightGroup.remove(lightGroup.children[0]);
+  const p=LIGHTING_PRESETS[name];
+  currentLighting=name;
+  if(renderer){renderer.setClearColor(p.bg,1);renderer.toneMappingExposure=p.exposure}
+  p.lights.forEach(l=>{
+    let light;
+    if(l.type==='hemi')light=new THREE.HemisphereLight(l.sky,l.ground,l.intensity);
+    else if(l.type==='amb')light=new THREE.AmbientLight(l.color,l.intensity);
+    else if(l.type==='dir'){light=new THREE.DirectionalLight(l.color,l.intensity);light.position.set(...l.pos)}
+    if(light)lightGroup.add(light);
+  });
+  localStorage.setItem('form3d_lighting',name);
+  // Update UI
+  document.querySelectorAll('.light-card').forEach(c=>c.classList.toggle('on',c.dataset.light===name));
+}
+
+function toggleLightPanel(){
+  const h=q('light-hud');if(!h)return;
+  h.classList.toggle('on');
+  q('b-light')?.classList.toggle('on',h.classList.contains('on'));
+}
+function renderLightPanel(){
+  const el=q('light-cards');if(!el)return;
+  el.innerHTML=Object.entries(LIGHTING_PRESETS).map(([k,p])=>`<div class="light-card${k===currentLighting?' on':''}" data-light="${k}" onclick="applyLightingPreset('${k}')">${p.name}</div>`).join('');
+}
+
+/* ══════════════════════════════════════════════
+   HOLLOWING — estimation + preview
+   Note : pour le vrai hollow d'un mesh imprimable, Bambu Studio le fait
+   nativement (clic droit modele -> Make hollow). Ici on calcule
+   l'economie de filament + on previsualise visuellement.
+   ══════════════════════════════════════════════ */
+let hollowPreviewMesh=null;
+let hollowWallMm=2.0; // 2mm wall par defaut
+let hollowDrain=true;
+
+function toggleHollowPanel(){
+  const h=q('hollow-hud');if(!h)return;
+  h.classList.toggle('on');
+  q('b-hollow')?.classList.toggle('on',h.classList.contains('on'));
+  if(h.classList.contains('on'))updateHollowPreview();
+  else clearHollowPreview();
+}
+
+function setHollowWall(v){
+  hollowWallMm=v;
+  const lbl=q('hollow-wall-val');if(lbl)lbl.textContent=v.toFixed(1)+' mm';
+  updateHollowPreview();
+}
+function setHollowDrain(v){hollowDrain=v;updateHollowPreview()}
+
+function clearHollowPreview(){
+  if(hollowPreviewMesh){scene.remove(hollowPreviewMesh);hollowPreviewMesh=null}
+}
+
+function updateHollowPreview(){
+  if(!mesh){q('hollow-stats').textContent='Aucun modèle';return}
+  clearHollowPreview();
+  // Stats : calcule volume mesh + volume creux (offset par wall)
+  const bbox=new THREE.Box3().setFromObject(mesh);const sz=new THREE.Vector3();bbox.getSize(sz);
+  const bsc=mesh.userData?.baseScale||1;
+  const dX=Math.max(sz.x/bsc*100*modelScale,0.05);
+  const dY=Math.max(sz.y/bsc*100*modelScale,0.05);
+  const dZ=Math.max(sz.z/bsc*100*modelScale,0.05);
+  // Approximation volume : 35% du bbox pour mesh moyen
+  const volBboxCm3=dX*dY*dZ/1000;
+  const volMeshCm3=volBboxCm3*0.35;
+  // Volume creux : offset uniforme de wall mm sur chaque côté
+  const wInner=Math.max(0,dX-2*hollowWallMm);
+  const hInner=Math.max(0,dY-2*hollowWallMm);
+  const dInner=Math.max(0,dZ-2*hollowWallMm);
+  const volInnerCm3=wInner*hInner*dInner/1000*0.35;
+  const volSavedCm3=Math.max(0,volMeshCm3-Math.max(0,volMeshCm3-volInnerCm3));
+  const realSavedCm3=Math.min(volMeshCm3*0.85,volInnerCm3);
+  // Poids economise
+  const mat=MATS[currentMat]||MATS.PLA;
+  const wSaved=Math.round(realSavedCm3*mat.density);
+  const wTotal=Math.round(volMeshCm3*mat.density);
+  const pctSaved=wTotal>0?Math.round(realSavedCm3/volMeshCm3*100):0;
+  const costSaved=(wSaved/1000*matPrice).toFixed(2);
+  // Affichage stats
+  q('hollow-stats').innerHTML=
+    `<div class="h-stat"><span>Poids initial</span><b>${wTotal} g</b></div>`+
+    `<div class="h-stat"><span>Poids creux</span><b>${wTotal-wSaved} g</b></div>`+
+    `<div class="h-stat h-save"><span>Économie</span><b>${wSaved} g (${pctSaved}%)</b></div>`+
+    `<div class="h-stat h-cost"><span>Coût économisé</span><b>${costSaved} €</b></div>`+
+    `<div class="h-stat"><span>Drain hole</span><b>${hollowDrain?'∅ 3 mm dessous':'Désactivé'}</b></div>`;
+  // Visualisation : copie du mesh scalé vers l'intérieur (approximation visuelle)
+  // Calcule un scale equivalent : (size - 2*wall) / size
+  const sxRatio=Math.max(0.01,(dX-2*hollowWallMm)/dX);
+  const syRatio=Math.max(0.01,(dY-2*hollowWallMm)/dY);
+  const szRatio=Math.max(0.01,(dZ-2*hollowWallMm)/dZ);
+  const innerMesh=mesh.clone();
+  innerMesh.traverse(n=>{
+    if(n.isMesh){
+      n.material=new THREE.MeshStandardMaterial({color:0xff4080,transparent:true,opacity:0.3,side:THREE.BackSide,wireframe:false});
+    }
+  });
+  innerMesh.scale.copy(mesh.scale);
+  innerMesh.scale.x*=sxRatio;innerMesh.scale.y*=syRatio;innerMesh.scale.z*=szRatio;
+  innerMesh.position.copy(mesh.position);
+  innerMesh.rotation.copy(mesh.rotation);
+  hollowPreviewMesh=innerMesh;scene.add(innerMesh);
+}
+
+/* ══════════════════════════════════════════════
    THREE.JS VIEWER
    preserveDrawingBuffer:true → permet la capture canvas pour les thumbs
    ══════════════════════════════════════════════ */
@@ -1353,11 +1519,9 @@ function init3(){
   const cv=q('cv'),wrap=cv.parentElement;const W=wrap.clientWidth,H=wrap.clientHeight||500;
   scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(35,W/H,0.01,1000);camera.position.set(0,0.5,4);camera.lookAt(0,0,0);
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,preserveDrawingBuffer:true});renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x080809,1);renderer.outputEncoding=THREE.sRGBEncoding;renderer.physicallyCorrectLights=true;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.8;
-  scene.add(new THREE.HemisphereLight(0xb3d4ff,0x1a1a2e,0.7));
-  const k=new THREE.DirectionalLight(0xffffff,2.8);k.position.set(3,8,5);scene.add(k);
-  const f=new THREE.DirectionalLight(0x88aaff,0.9);f.position.set(-6,-2,-3);scene.add(f);
-  const rim=new THREE.DirectionalLight(0xd4f542,0.8);rim.position.set(0,3,-8);scene.add(rim);
-  const front=new THREE.DirectionalLight(0xfff8f0,0.5);front.position.set(0,-1,6);scene.add(front);
+  // Groupe lumières pour pouvoir les remplacer via presets
+  lightGroup=new THREE.Group();scene.add(lightGroup);
+  applyLightingPreset(currentLighting||'neon');
   const grid=new THREE.GridHelper(10,22,0x1c1c24,0x131318);grid.position.y=-1.2;scene.add(grid);
   cv.addEventListener('mousedown',e=>{
     // En mode mesure : capture le clic gauche au lieu de drag
@@ -1392,10 +1556,12 @@ function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THRE
   // Active toujours les exports locaux dès qu'un mesh est chargé (peu importe le backend)
   q('ex-stl-local')?.classList.remove('dis');
   q('ex-obj-local')?.classList.remove('dis');
-  // Active les outils viewer (orient / measure / section)
+  // Active les outils viewer (orient / measure / section / light / hollow)
   q('b-orient')?.removeAttribute('disabled');
   q('b-measure')?.removeAttribute('disabled');
   q('b-section')?.removeAttribute('disabled');
+  q('b-light')?.removeAttribute('disabled');
+  q('b-hollow')?.removeAttribute('disabled');
 }
 function phMesh(){mesh=new THREE.Mesh(new THREE.TorusKnotGeometry(.55,.18,256,32),new THREE.MeshStandardMaterial({color:0xc8e83a,roughness:.1,metalness:.7}));scene.add(mesh)}
 
@@ -1700,6 +1866,7 @@ window.addEventListener('load',()=>{
   initMob();
   initGlobalDrop();
   initMatGrid();
+  renderLightPanel();
   // Restore profil imprimante
   const savedPrinter=localStorage.getItem('form3d_printer');
   if(savedPrinter&&PRINTERS[savedPrinter])selectedPrinter=savedPrinter;
