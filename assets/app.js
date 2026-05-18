@@ -1346,6 +1346,283 @@ let tT;
 function toast(msg,type=''){const t=q('toast');t.textContent=msg;t.className='toast on'+(type==='ok'?' ok':type===true||type==='err'?' err':'');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),3500)}
 
 /* ══════════════════════════════════════════════
+   COLOR PAINTER — vertex colors brush
+   + COLORIZE FROM IMAGE — projection caméra
+   ══════════════════════════════════════════════ */
+let paintMode=false,paintColor='#9eff3a',paintRadius=0.15;
+let paintColorHistory=['#9eff3a','#ff4f4f','#4fc3f7','#f5a623','#b06ef3','#ffffff','#1a1a1a','#76b900'];
+
+function togglePaint(){
+  paintMode=!paintMode;
+  q('paint-hud')?.classList.toggle('on',paintMode);
+  q('b-paint')?.classList.toggle('on',paintMode);
+  if(paintMode){
+    if(measMode)toggleMeasure();
+    if(secMode)setSecMode(false);
+    _ensureVertexColors();
+    toast('Mode peinture · clic + drag sur le mesh pour peindre');
+  }
+}
+
+function setPaintColor(c){
+  paintColor=c;
+  const el=q('paint-color-display');if(el)el.style.background=c;
+  if(!paintColorHistory.includes(c)){paintColorHistory.unshift(c);paintColorHistory=paintColorHistory.slice(0,8);renderPaintHistory()}
+}
+function setPaintRadius(v){paintRadius=v;const lbl=q('paint-radius-val');if(lbl)lbl.textContent=v.toFixed(2)}
+function renderPaintHistory(){
+  const el=q('paint-history');if(!el)return;
+  el.innerHTML=paintColorHistory.map(c=>`<button class="paint-swatch" style="background:${c}" onclick="setPaintColor('${c}')"></button>`).join('');
+}
+
+/* Assure que chaque mesh a un BufferAttribute 'color' */
+function _ensureVertexColors(){
+  if(!mesh)return;
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry)return;
+    const g=n.geometry;const pos=g.attributes.position;
+    if(!g.attributes.color){
+      const arr=new Float32Array(pos.count*3);
+      // Init avec couleur du materiau (ou blanc)
+      const matCol=n.material?.color||new THREE.Color(0xffffff);
+      for(let i=0;i<pos.count;i++){arr[i*3]=matCol.r;arr[i*3+1]=matCol.g;arr[i*3+2]=matCol.b}
+      g.setAttribute('color',new THREE.BufferAttribute(arr,3));
+    }
+    n.material.vertexColors=true;
+    n.material.color.set(0xffffff); // ne pas teinter les vertex colors
+    n.material.needsUpdate=true;
+  });
+}
+
+/* Peint à la position cliquée — affecte tous les vertices dans le rayon */
+function _paintAtPoint(point,obj){
+  if(!obj?.geometry)return 0;
+  const g=obj.geometry;
+  const pos=g.attributes.position;
+  const col=g.attributes.color;
+  if(!col)return 0;
+  const c=new THREE.Color(paintColor);
+  let painted=0;
+  // Convertir point monde -> coord locale de l'objet
+  const local=point.clone();
+  obj.worldToLocal(local);
+  const r2=paintRadius*paintRadius;
+  for(let i=0;i<pos.count;i++){
+    const dx=pos.getX(i)-local.x,dy=pos.getY(i)-local.y,dz=pos.getZ(i)-local.z;
+    const d2=dx*dx+dy*dy+dz*dz;
+    if(d2<r2){
+      // Falloff softer au bord
+      const t=1-d2/r2;
+      const r=col.getX(i)+(c.r-col.getX(i))*t;
+      const v=col.getY(i)+(c.g-col.getY(i))*t;
+      const b=col.getZ(i)+(c.b-col.getZ(i))*t;
+      col.setXYZ(i,r,v,b);
+      painted++;
+    }
+  }
+  col.needsUpdate=true;
+  return painted;
+}
+
+function _handlePaintEvent(e){
+  if(!paintMode||!mesh)return false;
+  const cv=q('cv');const rect=cv.getBoundingClientRect();
+  const mouse=new THREE.Vector2(
+    ((e.clientX-rect.left)/rect.width)*2-1,
+    -((e.clientY-rect.top)/rect.height)*2+1
+  );
+  const ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObject(mesh,true);
+  if(!hits.length)return true;
+  const h=hits[0];
+  _paintAtPoint(h.point,h.object);
+  return true;
+}
+
+function clearPaint(){
+  if(!mesh)return;
+  if(!confirm('Effacer toute la peinture ?'))return;
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry?.attributes?.color)return;
+    const col=n.geometry.attributes.color;
+    for(let i=0;i<col.count;i++)col.setXYZ(i,1,1,1);
+    col.needsUpdate=true;
+  });
+  toast('Peinture effacée');
+}
+
+/* Export 3MF basique avec vertex colors (compatible Bambu Studio) */
+function export3MFWithColors(){
+  if(!mesh){toast('Aucun modèle',true);return}
+  toast('Génération 3MF…');
+  setTimeout(()=>_do3MFExport(),30);
+}
+function _do3MFExport(){
+  // 3MF = ZIP contenant 3D/3dmodel.model (XML)
+  // On genere un XML minimal avec <vertices> + <triangles> + <colorgroup>
+  if(!mesh)return;
+  mesh.updateMatrixWorld(true);
+  const verts=[];const tris=[];const colors=[];const colorIdxMap={};
+  let vIdx=0;
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry)return;
+    const g=n.geometry;const pos=g.attributes.position;const idx=g.index;const col=g.attributes.color;
+    const m=n.matrixWorld;
+    const tmp=new THREE.Vector3();
+    const offV=vIdx;
+    for(let i=0;i<pos.count;i++){
+      tmp.fromBufferAttribute(pos,i).applyMatrix4(m);
+      verts.push([tmp.x,tmp.y,tmp.z]);
+      // Couleur hex
+      if(col){
+        const r=Math.round(col.getX(i)*255),vv=Math.round(col.getY(i)*255),b=Math.round(col.getZ(i)*255);
+        const hex='#'+[r,vv,b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
+        if(colorIdxMap[hex]===undefined){colorIdxMap[hex]=colors.length;colors.push(hex)}
+      }
+      vIdx++;
+    }
+    const fcount=idx?idx.count:pos.count;
+    for(let i=0;i<fcount;i+=3){
+      const a=(idx?idx.getX(i):i)+offV;
+      const b=(idx?idx.getX(i+1):i+1)+offV;
+      const c=(idx?idx.getX(i+2):i+2)+offV;
+      tris.push([a,b,c]);
+    }
+  });
+  // Build XML
+  let xml='<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml+='<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02">\n';
+  xml+='<resources>\n';
+  if(colors.length){
+    xml+='<m:colorgroup id="1">\n';
+    colors.forEach(c=>{xml+=`<m:color color="${c}"/>\n`});
+    xml+='</m:colorgroup>\n';
+  }
+  xml+='<object id="2" type="model"><mesh>\n<vertices>\n';
+  verts.forEach(v=>{xml+=`<vertex x="${v[0].toFixed(4)}" y="${v[1].toFixed(4)}" z="${v[2].toFixed(4)}"/>\n`});
+  xml+='</vertices>\n<triangles>\n';
+  tris.forEach(t=>{xml+=`<triangle v1="${t[0]}" v2="${t[1]}" v3="${t[2]}"/>\n`});
+  xml+='</triangles>\n</mesh></object>\n</resources>\n';
+  xml+='<build><item objectid="2"/></build>\n</model>\n';
+  // Pack ZIP minimal manuellement (sans lib)
+  const zip=_makeMinimalZip([
+    {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>'},
+    {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel-1" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>'},
+    {name:'3D/3dmodel.model',data:xml},
+  ]);
+  const filename='form-3d_'+Date.now().toString(36)+'.3mf';
+  downloadBlob(new Blob([zip],{type:'application/vnd.ms-package.3dmanufacturing-3dmodel+xml'}),filename);
+  toast('✓ 3MF avec couleurs téléchargé ('+verts.length.toLocaleString('fr')+' vertices, '+colors.length+' couleurs)','ok');
+}
+
+/* Pack ZIP store-only (sans compression) — suffisant pour Bambu Studio */
+function _makeMinimalZip(files){
+  // CRC32 table
+  if(!_crcTable){
+    _crcTable=new Uint32Array(256);
+    for(let i=0;i<256;i++){let c=i;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);_crcTable[i]=c>>>0}
+  }
+  const enc=new TextEncoder();
+  const parts=[];const central=[];let offset=0;
+  files.forEach(f=>{
+    const nameBytes=enc.encode(f.name);
+    const data=typeof f.data==='string'?enc.encode(f.data):f.data;
+    let crc=0xFFFFFFFF;
+    for(let i=0;i<data.length;i++)crc=(_crcTable[(crc^data[i])&0xFF]^(crc>>>8))>>>0;
+    crc=(crc^0xFFFFFFFF)>>>0;
+    // Local file header
+    const lh=new ArrayBuffer(30+nameBytes.length);const lv=new DataView(lh);
+    lv.setUint32(0,0x04034b50,true);lv.setUint16(4,20,true);lv.setUint16(6,0,true);lv.setUint16(8,0,true);
+    lv.setUint16(10,0,true);lv.setUint16(12,0,true);
+    lv.setUint32(14,crc,true);lv.setUint32(18,data.length,true);lv.setUint32(22,data.length,true);
+    lv.setUint16(26,nameBytes.length,true);lv.setUint16(28,0,true);
+    const lhBytes=new Uint8Array(lh);
+    parts.push(lhBytes,nameBytes,data);
+    // Central directory header
+    const ch=new ArrayBuffer(46+nameBytes.length);const cv=new DataView(ch);
+    cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0,true);
+    cv.setUint16(10,0,true);cv.setUint16(12,0,true);cv.setUint16(14,0,true);
+    cv.setUint32(16,crc,true);cv.setUint32(20,data.length,true);cv.setUint32(24,data.length,true);
+    cv.setUint16(28,nameBytes.length,true);cv.setUint16(30,0,true);cv.setUint16(32,0,true);
+    cv.setUint16(34,0,true);cv.setUint16(36,0,true);cv.setUint32(38,0,true);cv.setUint32(42,offset,true);
+    central.push(new Uint8Array(ch),nameBytes);
+    offset+=lhBytes.length+nameBytes.length+data.length;
+  });
+  // Central directory size
+  let cdSize=0;central.forEach(p=>cdSize+=p.length);
+  // EOCD
+  const eocd=new ArrayBuffer(22);const ev=new DataView(eocd);
+  ev.setUint32(0,0x06054b50,true);ev.setUint16(4,0,true);ev.setUint16(6,0,true);
+  ev.setUint16(8,files.length,true);ev.setUint16(10,files.length,true);
+  ev.setUint32(12,cdSize,true);ev.setUint32(16,offset,true);ev.setUint16(20,0,true);
+  // Assemblage final
+  const total=offset+cdSize+22;
+  const out=new Uint8Array(total);let pos=0;
+  parts.forEach(p=>{out.set(p,pos);pos+=p.length});
+  central.forEach(p=>{out.set(p,pos);pos+=p.length});
+  out.set(new Uint8Array(eocd),pos);
+  return out.buffer;
+}
+let _crcTable=null;
+
+/* ══════════════════════════════════════════════
+   COLORIZE FROM IMAGE — projection caméra
+   Charge une image et la projette depuis l'angle actuel sur le mesh
+   ══════════════════════════════════════════════ */
+function openColorize(){
+  q('colorize-file')?.click();
+}
+
+async function _doColorizeFromImage(file){
+  if(!mesh){toast('Aucun modèle',true);return}
+  toast('Colorisation depuis '+file.name+'…');
+  const dataUrl=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(file)});
+  const img=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=dataUrl});
+  // Cree un canvas pour echantillonner les pixels
+  const cv=document.createElement('canvas');cv.width=img.width;cv.height=img.height;
+  const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
+  const data=ctx.getImageData(0,0,img.width,img.height).data;
+  // Pour chaque vertex : projete dans l'espace ecran de la camera actuelle, echantillonne la couleur
+  _ensureVertexColors();
+  const tmpV=new THREE.Vector3();
+  const cvViewer=q('cv');const rect=cvViewer.getBoundingClientRect();
+  const aspectImg=img.width/img.height;
+  const aspectView=rect.width/rect.height;
+  let painted=0;
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry)return;
+    const g=n.geometry;const pos=g.attributes.position;const col=g.attributes.color;
+    if(!col)return;
+    const m=n.matrixWorld;
+    for(let i=0;i<pos.count;i++){
+      tmpV.fromBufferAttribute(pos,i).applyMatrix4(m);
+      // Projection sur l'ecran : -1..1
+      tmpV.project(camera);
+      // Skip si derriere ou hors-cadre
+      if(tmpV.z>1||tmpV.x<-1||tmpV.x>1||tmpV.y<-1||tmpV.y>1)continue;
+      // Convertir vers coord image
+      let u=(tmpV.x+1)/2,v=1-(tmpV.y+1)/2;
+      // Ajuste aspect : si image plus large, on rogne en X
+      if(aspectImg>aspectView){const r=aspectView/aspectImg;u=0.5+(u-0.5)*r}
+      else{const r=aspectImg/aspectView;v=0.5+(v-0.5)*r}
+      const px=Math.max(0,Math.min(img.width-1,Math.floor(u*img.width)));
+      const py=Math.max(0,Math.min(img.height-1,Math.floor(v*img.height)));
+      const idx=(py*img.width+px)*4;
+      col.setXYZ(i,data[idx]/255,data[idx+1]/255,data[idx+2]/255);
+      painted++;
+    }
+    col.needsUpdate=true;
+  });
+  toast('✓ '+painted.toLocaleString('fr')+' vertices colorisés depuis '+file.name,'ok');
+}
+
+function _handleColorizeInput(e){
+  const f=e?.target?.files?.[0];if(!f)return;
+  _doColorizeFromImage(f);
+  if(e?.target)e.target.value='';
+}
+
+/* ══════════════════════════════════════════════
    LIGHTING PRESETS — 5 ambiances
    ══════════════════════════════════════════════ */
 let lightGroup=null;
@@ -1526,10 +1803,19 @@ function init3(){
   cv.addEventListener('mousedown',e=>{
     // En mode mesure : capture le clic gauche au lieu de drag
     if(e.button===0&&measMode&&_handleMeasureClick(e)){e.preventDefault();return}
+    // En mode peinture : capture le clic + active drag pour brush continu
+    if(e.button===0&&paintMode){_handlePaintEvent(e);drag=true;mbtn=10;lx=e.clientX;ly=e.clientY;e.preventDefault();return}
     drag=true;mbtn=e.button;lx=e.clientX;ly=e.clientY;e.preventDefault()
   });
   window.addEventListener('mouseup',()=>{drag=false;mbtn=-1});
-  window.addEventListener('mousemove',e=>{if(!drag||!mesh)return;const dx=e.clientX-lx,dy=e.clientY-ly;if(mbtn===2||e.shiftKey){panX+=dx*.005;panY-=dy*.005;mesh.position.x=panX;mesh.position.y=panY}else{ry+=dx*.007;rx+=dy*.007;rx=Math.max(-1.5,Math.min(1.5,rx));mesh.rotation.y=ry;mesh.rotation.x=rx}lx=e.clientX;ly=e.clientY});
+  window.addEventListener('mousemove',e=>{
+    if(!drag||!mesh)return;
+    if(mbtn===10&&paintMode){_handlePaintEvent(e);return} // brush continu
+    const dx=e.clientX-lx,dy=e.clientY-ly;
+    if(mbtn===2||e.shiftKey){panX+=dx*.005;panY-=dy*.005;mesh.position.x=panX;mesh.position.y=panY}
+    else{ry+=dx*.007;rx+=dy*.007;rx=Math.max(-1.5,Math.min(1.5,rx));mesh.rotation.y=ry;mesh.rotation.x=rx}
+    lx=e.clientX;ly=e.clientY
+  });
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{dist=Math.max(1.2,Math.min(12,dist+e.deltaY*.008));camera.position.setLength(dist)},{passive:true});
   window.addEventListener('resize',()=>{const W2=wrap.clientWidth,H2=wrap.clientHeight;renderer.setSize(W2,H2);camera.aspect=W2/H2;camera.updateProjectionMatrix()});
@@ -1562,6 +1848,8 @@ function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THRE
   q('b-section')?.removeAttribute('disabled');
   q('b-light')?.removeAttribute('disabled');
   q('b-hollow')?.removeAttribute('disabled');
+  q('b-paint')?.removeAttribute('disabled');
+  q('b-colorize')?.removeAttribute('disabled');
 }
 function phMesh(){mesh=new THREE.Mesh(new THREE.TorusKnotGeometry(.55,.18,256,32),new THREE.MeshStandardMaterial({color:0xc8e83a,roughness:.1,metalness:.7}));scene.add(mesh)}
 
@@ -1867,6 +2155,7 @@ window.addEventListener('load',()=>{
   initGlobalDrop();
   initMatGrid();
   renderLightPanel();
+  renderPaintHistory();
   // Restore profil imprimante
   const savedPrinter=localStorage.getItem('form3d_printer');
   if(savedPrinter&&PRINTERS[savedPrinter])selectedPrinter=savedPrinter;
