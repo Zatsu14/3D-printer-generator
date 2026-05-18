@@ -2,6 +2,236 @@
    FORM — AI 3D Generator · App principal
    ══════════════════════════════════════════════ */
 const q=id=>document.getElementById(id);
+
+/* ══════════════════════════════════════════════
+   UNDO / REDO — stack d'opérations reversibles
+   ══════════════════════════════════════════════ */
+const undoStack=[];const redoStack=[];const UNDO_MAX=30;
+function pushUndo(op){
+  // op = {label, undo:fn, redo:fn}
+  undoStack.push(op);if(undoStack.length>UNDO_MAX)undoStack.shift();
+  redoStack.length=0;updateUndoUI();
+}
+function undo(){
+  const op=undoStack.pop();if(!op){toast('Rien à annuler');return}
+  op.undo();redoStack.push(op);updateUndoUI();
+  toast('↶ '+op.label);
+}
+function redoAction(){
+  const op=redoStack.pop();if(!op){toast('Rien à refaire');return}
+  op.redo();undoStack.push(op);updateUndoUI();
+  toast('↷ '+op.label);
+}
+function updateUndoUI(){
+  const u=q('b-undo'),r=q('b-redo');
+  if(u)u.disabled=undoStack.length===0;
+  if(r)r.disabled=redoStack.length===0;
+}
+
+/* ══════════════════════════════════════════════
+   COMMAND PALETTE — Ctrl/Cmd + K
+   ══════════════════════════════════════════════ */
+const COMMANDS=[
+  {label:'Générer un modèle',ico:'⚡',key:'Ctrl+Enter',action:()=>generate(),tags:'gen create new model'},
+  {label:'Basculer sur Tripo3D',ico:'☁',action:()=>setBackend('tripo'),tags:'tripo backend cloud'},
+  {label:'Basculer sur TRELLIS Local',ico:'🟣',action:()=>setBackend('trellis'),tags:'trellis local backend'},
+  {label:'Mode Texte',ico:'📝',action:()=>setMode('text'),tags:'mode text'},
+  {label:'Mode Image',ico:'🖼',action:()=>setMode('image'),tags:'mode image upload'},
+  {label:'Mode Multi-view',ico:'📐',action:()=>setMode('multiview'),tags:'mode multiview 4 angles'},
+  {label:'Mode Hybride',ico:'🔀',action:()=>setMode('hybrid'),tags:'mode hybrid hybride'},
+  {label:'Importer un modèle 3D',ico:'📥',action:()=>q('import-file')?.click(),tags:'import glb stl obj 3mf load file'},
+  {label:'Enrichir le prompt',ico:'✨',action:()=>enhancePrompt(),tags:'enhance prompt magic enrich'},
+  {label:'Auto-orientation',ico:'🎯',action:()=>autoOrient(),tags:'orient rotate auto print'},
+  {label:'Outils de mesure',ico:'📏',action:()=>toggleMeasure(),tags:'measure distance angle ruler'},
+  {label:'Section transversale',ico:'✂',action:()=>toggleSection(),tags:'section cross cut slice'},
+  {label:'Hollowing estimator',ico:'⊙',action:()=>toggleHollowPanel(),tags:'hollow hollowing evider creux'},
+  {label:'Éclairage du viewer',ico:'💡',action:()=>toggleLightPanel(),tags:'light lighting eclairage'},
+  {label:'Peindre le mesh',ico:'🎨',action:()=>togglePaint(),tags:'paint color brush colorize'},
+  {label:'Coloriser depuis image',ico:'🖼',action:()=>openColorize(),tags:'colorize image projection texture'},
+  {label:'Export GLB',ico:'📦',action:()=>doE('glb'),tags:'export glb gratuit'},
+  {label:'Export STL local (gratuit)',ico:'🆓',action:()=>exportSTLLocal(),tags:'export stl local free'},
+  {label:'Export OBJ local (gratuit)',ico:'🆓',action:()=>exportOBJLocal(),tags:'export obj local free'},
+  {label:'Export 3MF avec couleurs',ico:'🌈',action:()=>export3MFWithColors(),tags:'export 3mf color ams'},
+  {label:'Mode focus (cacher panels)',ico:'🔍',action:()=>toggleFocusMode(),tags:'focus fullscreen viewer only'},
+  {label:'Reset vue 3D',ico:'↻',action:()=>rstC(),tags:'reset view camera'},
+  {label:'Wireframe ON/OFF',ico:'⬡',action:()=>togW(),tags:'wireframe wire'},
+  {label:'Effacer historique',ico:'🗑',action:()=>clearHist(),tags:'clear history delete'},
+  {label:'Ouvrir le Guide',ico:'📖',key:'?',action:()=>openModal('modal-guide'),tags:'help guide documentation'},
+  {label:'Annuler dernière action',ico:'↶',key:'Ctrl+Z',action:()=>undo(),tags:'undo'},
+  {label:'Refaire',ico:'↷',key:'Ctrl+Shift+Z',action:()=>redoAction(),tags:'redo'},
+];
+
+function openCmdPalette(){
+  q('cmd-palette')?.classList.add('on');
+  setTimeout(()=>{const inp=q('cmd-input');if(inp){inp.value='';inp.focus();renderCmdResults('')}},20);
+}
+function closeCmdPalette(){q('cmd-palette')?.classList.remove('on')}
+function renderCmdResults(filter){
+  const f=filter.toLowerCase().trim();
+  const matched=f?COMMANDS.filter(c=>c.label.toLowerCase().includes(f)||(c.tags||'').toLowerCase().includes(f)):COMMANDS;
+  const el=q('cmd-results');if(!el)return;
+  if(!matched.length){el.innerHTML='<div class="cmd-empty">Aucune commande</div>';return}
+  el.innerHTML=matched.slice(0,12).map((c,i)=>`<div class="cmd-row${i===0?' on':''}" data-cmd="${COMMANDS.indexOf(c)}" onclick="runCmd(${COMMANDS.indexOf(c)})"><span class="cmd-ico">${c.ico}</span><span class="cmd-lbl">${c.label}</span>${c.key?`<span class="cmd-key">${c.key}</span>`:''}</div>`).join('');
+}
+function runCmd(idx){
+  const c=COMMANDS[idx];if(!c)return;
+  closeCmdPalette();
+  try{c.action()}catch(e){console.error(e);toast('Erreur : '+e.message.slice(0,50),true)}
+}
+function _cmdKeyNav(e){
+  if(!q('cmd-palette')?.classList.contains('on'))return;
+  const rows=Array.from(document.querySelectorAll('.cmd-row'));
+  const cur=rows.findIndex(r=>r.classList.contains('on'));
+  if(e.key==='ArrowDown'){e.preventDefault();if(cur<rows.length-1){rows[cur]?.classList.remove('on');rows[cur+1]?.classList.add('on')}}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(cur>0){rows[cur]?.classList.remove('on');rows[cur-1]?.classList.add('on')}}
+  else if(e.key==='Enter'){e.preventDefault();const sel=rows[Math.max(0,cur)];if(sel)runCmd(+sel.dataset.cmd)}
+  else if(e.key==='Escape'){e.preventDefault();closeCmdPalette()}
+}
+
+/* ══════════════════════════════════════════════
+   FOCUS MODE — cache panneaux gauche/droite
+   ══════════════════════════════════════════════ */
+let focusMode=false;
+function toggleFocusMode(){
+  focusMode=!focusMode;
+  document.body.classList.toggle('focus-mode',focusMode);
+  toast(focusMode?'🔍 Mode focus (F pour quitter)':'Mode normal');
+  // Resize renderer
+  setTimeout(()=>{if(renderer){const cv=q('cv');const p=cv.parentElement;renderer.setSize(p.clientWidth,p.clientHeight);camera.aspect=p.clientWidth/p.clientHeight;camera.updateProjectionMatrix()}},250);
+}
+
+/* ══════════════════════════════════════════════
+   KEYBOARD SHORTCUTS GLOBAUX
+   ══════════════════════════════════════════════ */
+function initShortcuts(){
+  document.addEventListener('keydown',e=>{
+    // Si on est dans la palette, laisse _cmdKeyNav gerer
+    if(q('cmd-palette')?.classList.contains('on')){_cmdKeyNav(e);return}
+    // Ne pas trigger si on tape dans un input/textarea
+    const tag=e.target?.tagName;
+    const inField=tag==='INPUT'||tag==='TEXTAREA'||e.target?.isContentEditable;
+    // Ctrl/Cmd+K toujours actif meme dans un champ
+    if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openCmdPalette();return}
+    if(inField)return;
+    // Ctrl+Enter -> generer (depuis le textarea aussi)
+    // (geré sépcifique pour les textareas via le bloc suivant)
+    if(e.key==='?'||(e.shiftKey&&e.key==='/'))  {e.preventDefault();openModal('modal-guide');return}
+    if(e.key==='Escape'){
+      // Ferme HUDs prioritairement
+      ['cmd-palette','modal-guide','modal-retex','modal-anim','meas-hud','sec-hud','hollow-hud','light-hud','paint-hud','enh-pop'].forEach(id=>{const el=q(id);if(el?.classList.contains('on')){el.classList.remove('on');e.preventDefault()}});
+      return;
+    }
+    if(e.key==='f'||e.key==='F'){e.preventDefault();toggleFocusMode();return}
+    if(e.key==='r'||e.key==='R')if(!e.ctrlKey){e.preventDefault();rstC();return}
+    if(e.key==='1'){e.preventDefault();setMode('text');return}
+    if(e.key==='2'){e.preventDefault();setMode('image');return}
+    if(e.key==='3'){e.preventDefault();setMode('multiview');return}
+    if(e.key==='4'){e.preventDefault();setMode('hybrid');return}
+    if(e.key==='t'||e.key==='T')if(!e.ctrlKey){e.preventDefault();setBackend('tripo');return}
+    if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key==='z'){e.preventDefault();undo();return}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='Z'){e.preventDefault();redoAction();return}
+  });
+  // Ctrl+Enter dans les textarea
+  ['prompt','prompt2'].forEach(id=>{
+    const el=q(id);if(!el)return;
+    el.addEventListener('keydown',e=>{
+      if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();generate()}
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════
+   AUTOSAVE DRAFTS — sauve prompts en cours
+   ══════════════════════════════════════════════ */
+function initAutosave(){
+  ['prompt','prompt2','neg'].forEach(id=>{
+    const el=q(id);if(!el)return;
+    const saved=localStorage.getItem('form3d_draft_'+id);if(saved)el.value=saved;
+    if(id==='prompt'&&q('cr'))q('cr').textContent=el.value.length;
+    if(id==='prompt2'&&q('cr2'))q('cr2').textContent=el.value.length;
+    el.addEventListener('input',()=>{localStorage.setItem('form3d_draft_'+id,el.value)});
+  });
+}
+
+/* ══════════════════════════════════════════════
+   SUCCESS ANIMATION — pulse + particules
+   ══════════════════════════════════════════════ */
+function fireSuccessFX(){
+  const ov=q('success-fx');if(!ov)return;
+  ov.classList.remove('on');void ov.offsetWidth; // reflow
+  ov.classList.add('on');
+  setTimeout(()=>ov.classList.remove('on'),1800);
+}
+
+/* ══════════════════════════════════════════════
+   LAYOUT REDIMENSIONNABLE — drag handles entre panels
+   ══════════════════════════════════════════════ */
+function initResizers(){
+  const lW=localStorage.getItem('form3d_lw');
+  const rW=localStorage.getItem('form3d_rw');
+  if(lW)document.documentElement.style.setProperty('--lw',lW+'px');
+  if(rW)document.documentElement.style.setProperty('--rw',rW+'px');
+  _initResizer('resize-l','--lw',true);
+  _initResizer('resize-r','--rw',false);
+}
+function _initResizer(id,cssVar,left){
+  const el=q(id);if(!el)return;
+  let dragging=false,startX=0,startW=0;
+  el.addEventListener('mousedown',e=>{
+    dragging=true;startX=e.clientX;
+    const cs=getComputedStyle(document.documentElement);
+    startW=parseInt(cs.getPropertyValue(cssVar))||(left?320:280);
+    document.body.style.cursor='ew-resize';e.preventDefault();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const dx=e.clientX-startX;
+    const newW=Math.max(220,Math.min(500,left?startW+dx:startW-dx));
+    document.documentElement.style.setProperty(cssVar,newW+'px');
+  });
+  window.addEventListener('mouseup',()=>{
+    if(!dragging)return;
+    dragging=false;document.body.style.cursor='';
+    localStorage.setItem(left?'form3d_lw':'form3d_rw',parseInt(getComputedStyle(document.documentElement).getPropertyValue(cssVar)));
+    // Resize renderer
+    if(renderer){const cv=q('cv');const p=cv.parentElement;renderer.setSize(p.clientWidth,p.clientHeight);camera.aspect=p.clientWidth/p.clientHeight;camera.updateProjectionMatrix()}
+  });
+}
+
+/* ══════════════════════════════════════════════
+   SEARCH HISTORY
+   ══════════════════════════════════════════════ */
+let histFilter='';
+function setHistFilter(v){histFilter=v.toLowerCase().trim();rH()}
+
+/* ══════════════════════════════════════════════
+   PROGRESS DETAILLEE — sublabels enrichis dans setPg
+   (Note : on enrichit les appels setPg existants avec emojis d'etape)
+   ══════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════
+   ONGLETS PANNEAU GAUCHE
+   Filtre les sections selon : Tout / Sujet / Style / API
+   ══════════════════════════════════════════════ */
+let currentLeftTab='all';
+function setLeftTab(t){
+  currentLeftTab=t;
+  document.querySelectorAll('.l-tab').forEach(el=>el.classList.toggle('on',el.dataset.lt===t));
+  document.body.classList.remove('l-tab-all','l-tab-sujet','l-tab-style','l-tab-api','l-tab-trellis');
+  document.body.classList.add('l-tab-'+t);
+}
+function initLeftTabs(){
+  // Tabs deja en HTML, juste assurer le state initial
+  setLeftTab('all');
+}
+
+/* Specs sections collapsibles */
+function toggleSpecSec(headerEl){
+  const sec=headerEl.parentNode;
+  sec.classList.toggle('collapsed');
+}
+
+
 const PROXY='https://form-3d-proxy.antho14j.workers.dev/proxy';
 const HIST_KEY='form3d_hist_v2';
 
@@ -305,7 +535,7 @@ function pollT(key,id){
         mUrls={glb:out.pbr_model||out.model||out.base_model,_taskId:id};
         if(out.rendered_image)mUrls.thumb=out.rendered_image;
         ppTaskId=id;origUrl=mUrls.glb;origThumb=mUrls.thumb||null;
-        setPg(100,'Modèle prêt ✓','TRIPO v3.1');setG(false);
+        setPg(100,'Modèle prêt ✓','TRIPO v3.1');setG(false);fireSuccessFX();
         ['glb','stl','3mf','fbx','obj'].forEach(f=>q('ex-'+f)?.classList.remove('dis'));
         q('ex-bambu')?.classList.remove('dis');
         setStage('Prêt · '+quality.toUpperCase(),true);
@@ -323,7 +553,7 @@ function pollT(key,id){
       }else if(['failed','cancelled','banned','expired'].includes(task.status)){
         clrP();setG(false);hidP();updH(id,'error',null);toast('Génération échouée'+(task.error_msg?' : '+task.error_msg:''),true);
       }else{
-        const lbl=pct<20?'Analyse…':pct<50?'Construction mesh…':pct<80?'Textures PBR…':'Finalisation…';
+        const lbl=pct<20?'[1/4] Analyse de la prompt…':pct<50?'[2/4] Construction du mesh…':pct<80?'[3/4] Textures PBR…':'[4/4] Finalisation…';
         setPg(Math.max(18,pct),lbl,'TRIPO v3.1 · '+quality.toUpperCase());
       }
     }catch(e){}
@@ -1099,8 +1329,61 @@ function _afterHistLoadUI(h,isTrl){
 }
 function rH(){
   const el=q('hist');
-  if(!hist.length){el.innerHTML='<div class="he">Aucune génération<br>Tes créations apparaîtront ici</div>';return}
-  el.innerHTML=hist.map((h,i)=>`<div class="hi ${i===histSelIdx?'on':i===0&&histSelIdx<0?'on':''}" onclick="selH(${i})"><div class="hiT">${h.thumb?`<img src="${h.thumb}"/>`:'⬡'}</div><div style="flex:1;min-width:0"><div class="hip">${(h.prompt||'').slice(0,22)}${(h.prompt||'').length>22?'…':''}</div><div class="him">${h.mode}·${h.quality||'hd'}·${h.date?new Date(h.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</div></div><div class="hid d${h.status==='done'?'ok':h.status==='error'?'er':'ld'}"></div></div>`).join('')
+  if(!el)return;
+  if(!hist.length){
+    el.innerHTML='<div class="he empty-state"><div class="es-ico">⬡</div><h4>Aucune génération</h4><p>Tes créations apparaîtront ici.<br>Décris ton objet et clique <b>Générer</b>.</p><button class="es-cta" onclick="q(\'prompt\').focus()">Commencer ➜</button></div>';
+    return;
+  }
+  // Filtre
+  let filtered=hist;
+  if(histFilter){
+    filtered=hist.filter(h=>
+      (h.prompt||'').toLowerCase().includes(histFilter)||
+      (h.mode||'').toLowerCase().includes(histFilter)||
+      (h.quality||'').toLowerCase().includes(histFilter)
+    );
+  }
+  if(!filtered.length){el.innerHTML='<div class="he">Aucun résultat pour "'+histFilter+'"</div>';return}
+  el.innerHTML=filtered.map(h=>{
+    const i=hist.indexOf(h);
+    const sel=i===histSelIdx?' on':(i===0&&histSelIdx<0?' on':'');
+    const promptShort=(h.prompt||'').slice(0,22)+((h.prompt||'').length>22?'…':'');
+    const dateShort=h.date?new Date(h.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+    const canRegen=h.mode!=='import'; // imports ne se regenerent pas
+    return `<div class="hi${sel}" onclick="selH(${i})">
+      <div class="hiT">${h.thumb?`<img src="${h.thumb}" alt="thumbnail"/>`:'⬡'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="hip">${promptShort}</div>
+        <div class="him">${h.mode}·${h.quality||'hd'}·${dateShort}</div>
+      </div>
+      <div class="hi-actions">
+        ${canRegen?`<button class="hi-act" aria-label="Re-générer ce modèle" title="Re-générer" onclick="event.stopPropagation();regenFromHist(${i})">↻</button>`:''}
+        <div class="hid d${h.status==='done'?'ok':h.status==='error'?'er':'ld'}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* Re-genere a partir d'un item d'historique : restaure le prompt et clique Generate */
+function regenFromHist(i){
+  const h=hist[i];if(!h){toast('Item introuvable',true);return}
+  // Restaure mode + prompt
+  if(h.mode==='import'){toast('Pas de regen pour un import',true);return}
+  setMode(h.mode||'text');
+  if(h.mode==='hybrid'){if(q('prompt2'))q('prompt2').value=h.prompt||'';}
+  else if(h.mode==='text'){if(q('prompt'))q('prompt').value=h.prompt||''}
+  if(h.quality&&['turbo','standard','hd'].includes(h.quality)){
+    quality=h.quality;
+    document.querySelectorAll('.q-card').forEach(c=>{
+      const oc=c.getAttribute('onclick')||'';
+      c.classList.toggle('on',oc.includes("'"+h.quality+"'"));
+    });
+  }
+  updateCost();
+  toast('🔄 Paramètres restaurés — clique Générer','ok');
+  // Animation flash sur bouton generate
+  q('gbtn')?.classList.add('btn-pulse');
+  setTimeout(()=>q('gbtn')?.classList.remove('btn-pulse'),1500);
 }
 
 /* Détection overhangs : > 45° → supports nécessaires */
@@ -1211,7 +1494,7 @@ function showSpecs(h){
   if(colorOk&&printer.multicolor<=1)warns+=warnRow('Multicolor indisponible sur '+printer.label+' — utiliser X2D / X1C / P1S');
   if(mat.bed>=90&&!printer.enclosed)warns+=warnRow(mat.label+' nécessite une enclosure — préférer X2D / X1C / P1S');
 
-  q('specs-content').innerHTML='<div style="padding:10px 12px">'+warns+
+  q('specs-content').innerHTML='<div class="specs-inner" style="padding:10px 12px">'+warns+'<div class="spec-sec-dummy"><div class="spec-sec-body">'+
     secH('🖨 Imprimante')+
     sR('🏷','Modèle',currentSpecs.printer)+
     sR('📋','Profil slicer',currentSpecs.profile)+
@@ -1263,11 +1546,13 @@ function showSpecs(h){
     sR('🆔','Task ID',(currentSpecs.taskId||'—').slice(0,20)+'…')+
     sR('📅','Date',currentSpecs.date)+
     sR('⭐','Qualité gen',currentSpecs.quality)+
-    '</div>';
+    '</div></div></div>';
   q('copy-specs-btn').disabled=false;setRTab('specs');
 }
 function sR(ico,label,val){return`<div class="spec-row"><span class="spec-ico">${ico}</span><div><div class="spec-label">${label}</div><div class="spec-val">${val}</div></div></div>`}
-function secH(t){return`<div class="spec-section-h">${t}</div>`}
+function secH(t){return`</div></div><div class="spec-sec"><div class="spec-section-h" onclick="toggleSpecSec(this)"><span>${t}</span><span class="spec-caret">▾</span></div><div class="spec-sec-body">`}
+/* La structure utilise '</div></div>' pour fermer la section precedente avant d'en ouvrir une nouvelle.
+   On wrappe la sortie de showSpecs avec un debut/fin specifique. */
 function warnRow(t){return`<div class="spec-warn">⚠️ ${t}</div>`}
 
 function copySpecs(){
@@ -2215,7 +2500,7 @@ async function generateTrellis(){
     if(mesh){scene.remove(mesh);mesh=null}
     const dv=new DataView(glbBuf);
     if(dv.getUint32(0,true)===0x46546C67)await loadGLB(glbBuf);else loadSTL(glbBuf);
-    setPg(100,'Modèle prêt ✓','TRELLIS');setG(false);setTimeout(hidP,1500);
+    setPg(100,'Modèle prêt ✓','TRELLIS');setG(false);fireSuccessFX();setTimeout(hidP,1500);
     // 6. Update UI
     q('ex-glb')?.classList.remove('dis');
     q('ex-bambu')?.classList.remove('dis');
@@ -2253,6 +2538,15 @@ window.addEventListener('load',()=>{
   renderLightPanel();
   renderPaintHistory();
   renderEnhancerStyles();
+  initShortcuts();
+  initAutosave();
+  initResizers();
+  updateUndoUI();
+  initLeftTabs();
+  // First-run tour si jamais lance
+  if(!localStorage.getItem('form3d_tour_done')&&!localStorage.getItem(HIST_KEY)){
+    setTimeout(()=>q('cmd-input')&&toast('💡 Astuce : Ctrl+K pour la palette de commandes'),2000);
+  }
   // Restore profil imprimante
   const savedPrinter=localStorage.getItem('form3d_printer');
   if(savedPrinter&&PRINTERS[savedPrinter])selectedPrinter=savedPrinter;
