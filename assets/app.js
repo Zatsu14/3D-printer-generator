@@ -314,6 +314,9 @@ const PRINTERS={
 };
 let selectedPrinter='X2D';
 let nozzleSize=0.4;
+let autoRotate=true;
+let baseGroup=null; // socle eventuel (THREE.Group ajoute au mesh)
+let baseConfig={type:'disc',thicknessMm:3,diameterMm:0,marginPct:20}; // diameterMm=0 -> auto
 
 /* ── TRELLIS ── */
 let backend='tripo'; // 'tripo'|'trellis'
@@ -1704,7 +1707,20 @@ function renderNozzleOpts(){
 }
 
 function showFils(){
-  const cols=inferCols();const mat=MATS[currentMat]||MATS.PLA;const bg=20;
+  const cols=inferCols();const mat=MATS[currentMat]||MATS.PLA;
+  // Calcule le poids reel depuis le mesh courant (au lieu d'un fixe 20g)
+  let bg=20;
+  if(mesh){
+    const bbox=new THREE.Box3().setFromObject(mesh);
+    const sz=new THREE.Vector3();bbox.getSize(sz);
+    const bsc=mesh.userData?.baseScale||mesh.scale.x||1;
+    const dX=Math.max(sz.x/bsc,0.05)*100*modelScale;
+    const dY=Math.max(sz.y/bsc,0.05)*100*modelScale;
+    const dZ=Math.max(sz.z/bsc,0.05)*100*modelScale;
+    // Volume mesh estime ~ 35% du bbox (figurine moyenne)
+    const volCm3=dX*dY*dZ*0.35/1000;
+    bg=Math.max(1,volCm3*mat.density);
+  }
   const per=Math.floor(100/cols.length),rem=100-per*cols.length;
   const items=cols.map((c,i)=>{const pct=per+(i===0?rem:0);return{color:c.hex,name:c.name+' ('+currentMat+')',pct,g:Math.round(bg*mat.density*pct/100)}});
   const tg=items.reduce((a,f)=>a+f.g,0);
@@ -1727,8 +1743,9 @@ function setScale(v){
   modelScale=v/100;
   if(mesh&&mesh.userData.baseScale)mesh.scale.setScalar(mesh.userData.baseScale*modelScale);
   q('scale-lbl').textContent=v+'%';
+  updateHeightInput();
+  if(baseGroup)applyBase();
   if(hist.length)showSpecs(hist[0]);
-  // Debounce : push undo apres 500ms d'inactivite
   clearTimeout(_scaleTimer);
   _scaleTimer=setTimeout(()=>{
     const before=_scaleBefore,after=_snapshotTransform();
@@ -1738,6 +1755,119 @@ function setScale(v){
     }
   },500);
 }
+
+function toggleAutoRotate(){
+  autoRotate=!autoRotate;
+  q('b-rotate')?.classList.toggle('on',autoRotate);
+  localStorage.setItem('form3d_autorotate',autoRotate?'1':'0');
+  toast(autoRotate?'▶ Rotation auto activée':'⏸ Rotation auto stoppée');
+}
+
+/* ══════════════════════════════════════════════
+   HAUTEUR EN MM — autosize via modelScale
+   La hauteur reelle d'un modele = sz.y/baseScale × 100 mm × modelScale
+   Donc modelScale = targetMm / (sz.y/baseScale × 100)
+   ══════════════════════════════════════════════ */
+function getModelHeightMm(){
+  if(!mesh)return 0;
+  const box=new THREE.Box3().setFromObject(mesh);
+  const sz=new THREE.Vector3();box.getSize(sz);
+  const bsc=mesh.userData?.baseScale||mesh.scale.x||1;
+  return Math.round(Math.max(sz.y/bsc,0.05)*100);
+}
+
+function setHeightMm(targetMm){
+  if(!mesh||!targetMm||targetMm<5)return;
+  const before=_snapshotTransform?.();
+  const box=new THREE.Box3().setFromObject(mesh);
+  const sz=new THREE.Vector3();box.getSize(sz);
+  const bsc=mesh.userData?.baseScale||1;
+  const currentMm=Math.max(sz.y/bsc,0.05)*100*modelScale;
+  if(currentMm<=0)return;
+  const factor=targetMm/currentMm;
+  const newScale=modelScale*factor;
+  modelScale=Math.max(0.05,Math.min(10,newScale));
+  mesh.scale.setScalar(bsc*modelScale);
+  // MAJ UI
+  const sl=q('scale-sl');if(sl)sl.value=Math.round(modelScale*100);
+  const ll=q('scale-lbl');if(ll)ll.textContent=Math.round(modelScale*100)+'%';
+  const hi=q('scale-mm-inp');if(hi)hi.value=Math.round(getModelHeightMm()*modelScale);
+  if(hist.length)showSpecs(hist[0]);
+  if(typeof _snapshotTransform==='function'){
+    const after=_snapshotTransform();
+    if(before&&after&&typeof pushUndo==='function')pushUndo({label:'Hauteur '+Math.round(targetMm)+' mm',undo:()=>_restoreTransform(before),redo:()=>_restoreTransform(after)});
+  }
+  toast('📏 Hauteur : '+Math.round(targetMm)+' mm','ok');
+}
+
+function updateHeightInput(){
+  const inp=q('scale-mm-inp');if(!inp)return;
+  const mm=Math.round(getModelHeightMm()*modelScale);
+  if(mm>0&&document.activeElement!==inp)inp.value=mm;
+}
+
+/* ══════════════════════════════════════════════
+   SOCLE / PLATEFORME — disc / hex / square
+   Ajoute un mesh sous le modele pour stabilite impression
+   ══════════════════════════════════════════════ */
+function toggleBasePanel(){
+  q('base-hud')?.classList.toggle('on');
+  q('b-base')?.classList.toggle('on',q('base-hud').classList.contains('on'));
+}
+
+function setBaseType(t){
+  baseConfig.type=t;
+  document.querySelectorAll('.base-type').forEach(el=>el.classList.toggle('on',el.dataset.t===t));
+  if(baseGroup)applyBase();
+}
+function setBaseThickness(mm){
+  baseConfig.thicknessMm=mm;
+  const lbl=q('base-thick-val');if(lbl)lbl.textContent=mm.toFixed(1)+' mm';
+  if(baseGroup)applyBase();
+}
+function setBaseMargin(pct){
+  baseConfig.marginPct=pct;
+  const lbl=q('base-margin-val');if(lbl)lbl.textContent=pct+'%';
+  if(baseGroup)applyBase();
+}
+
+function applyBase(){
+  if(!mesh)return;
+  removeBase();
+  // Compute bbox du modele en coord locale du mesh (avant ajout du socle)
+  const box=new THREE.Box3().setFromObject(mesh);
+  const sz=new THREE.Vector3();box.getSize(sz);
+  const bsc=mesh.userData?.baseScale||1;
+  // largeur/profondeur reelle en mm
+  const wMm=Math.max(sz.x/bsc*100*modelScale,1);
+  const dMm=Math.max(sz.z/bsc*100*modelScale,1);
+  // Ajoute marge
+  const margin=1+baseConfig.marginPct/100;
+  const baseDiamMm=baseConfig.diameterMm>0?baseConfig.diameterMm:Math.max(wMm,dMm)*margin;
+  // Convert mm vers unites scene (1 mm = 0.01 unite scene car baseScale*100 = mm)
+  const baseDiam=baseDiamMm/100*bsc;
+  const baseThick=baseConfig.thicknessMm/100*bsc;
+  let geo;
+  if(baseConfig.type==='hex')geo=new THREE.CylinderGeometry(baseDiam/2,baseDiam/2,baseThick,6);
+  else if(baseConfig.type==='square')geo=new THREE.BoxGeometry(baseDiam,baseThick,baseDiam);
+  else geo=new THREE.CylinderGeometry(baseDiam/2,baseDiam/2,baseThick,48);
+  const mat=new THREE.MeshStandardMaterial({color:0x404048,roughness:.7,metalness:.15});
+  const baseMesh=new THREE.Mesh(geo,mat);
+  // Positionner sous le mesh : Y = min Y du mesh - moitie epaisseur
+  baseGroup=new THREE.Group();
+  // Place dans coord MONDE puis ajoute a scene (pas au mesh) pour eviter rotations
+  const minY=box.min.y;
+  baseMesh.position.y=minY-baseThick/2;
+  baseGroup.add(baseMesh);
+  scene.add(baseGroup);
+  // Update UI feedback
+  const stats=q('base-stats');if(stats)stats.textContent='Ø '+Math.round(baseDiamMm)+' mm · '+baseConfig.thicknessMm.toFixed(1)+' mm épais';
+}
+
+function removeBase(){if(baseGroup){scene.remove(baseGroup);baseGroup.traverse(n=>{n.geometry?.dispose?.();n.material?.dispose?.()});baseGroup=null}}
+
+function addBase(){applyBase();toast('✓ Socle ajouté','ok')}
+function clearBase(){removeBase();toast('Socle retiré')}
 
 function toggleCompare(){
   if(!origUrl){toast('Génère d\'abord un modèle',true);return}
@@ -2446,7 +2576,7 @@ function init3(){
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{dist=Math.max(1.2,Math.min(12,dist+e.deltaY*.008));camera.position.setLength(dist)},{passive:true});
   window.addEventListener('resize',()=>{const W2=wrap.clientWidth,H2=wrap.clientHeight;renderer.setSize(W2,H2);camera.aspect=W2/H2;camera.updateProjectionMatrix()});
-  (function anim(){requestAnimationFrame(anim);if(mesh&&!drag){mesh.rotation.y+=.003;ry=mesh.rotation.y}renderer.render(scene,camera)})();
+  (function anim(){requestAnimationFrame(anim);if(mesh&&!drag&&autoRotate&&!paintMode&&!measMode){mesh.rotation.y+=.003;ry=mesh.rotation.y}renderer.render(scene,camera)})();
 }
 
 async function loadM(url){
@@ -2466,9 +2596,11 @@ async function loadGLB(buf){
   if(!group.children.length){phMesh();return}mesh=group;finM()}catch(e){phMesh()}
 }
 function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THREE.Vector3();box.getSize(sz);const sc=2.2/Math.max(sz.x,sz.y,sz.z);const center=new THREE.Vector3();box.getCenter(center);mesh.position.sub(center.multiplyScalar(sc));mesh.scale.setScalar(sc);mesh.userData.baseScale=sc;scene.add(mesh);rx=ry=panX=panY=0;modelScale=1;const sw=q('scale-wrap');if(sw)sw.style.display='flex';const sl=q('scale-sl');if(sl)sl.value=100;const ll=q('scale-lbl');if(ll)ll.textContent='100%';
-  // Reset undo stack + cache d'adjacence au chargement d'un nouveau mesh
+  // Reset undo stack + cache d'adjacence + socle au chargement d'un nouveau mesh
   undoStack.length=0;redoStack.length=0;updateUndoUI();
   _faceAdjCache=null;_faceAdjCacheMesh=null;
+  removeBase();
+  updateHeightInput();
   // Active toujours les exports locaux dès qu'un mesh est chargé (peu importe le backend)
   q('ex-stl-local')?.classList.remove('dis');
   q('ex-obj-local')?.classList.remove('dis');
@@ -2480,6 +2612,7 @@ function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THRE
   q('b-hollow')?.removeAttribute('disabled');
   q('b-paint')?.removeAttribute('disabled');
   q('b-colorize')?.removeAttribute('disabled');
+  q('b-base')?.removeAttribute('disabled');
 }
 function phMesh(){mesh=new THREE.Mesh(new THREE.TorusKnotGeometry(.55,.18,256,32),new THREE.MeshStandardMaterial({color:0xc8e83a,roughness:.1,metalness:.7}));scene.add(mesh)}
 
@@ -2806,6 +2939,10 @@ window.addEventListener('load',()=>{
   initResizers();
   updateUndoUI();
   initLeftTabs();
+  // Restore auto-rotate state
+  const arSaved=localStorage.getItem('form3d_autorotate');
+  if(arSaved!==null)autoRotate=arSaved==='1';
+  q('b-rotate')?.classList.toggle('on',autoRotate);
   // First-run tour si jamais lance
   if(!localStorage.getItem('form3d_tour_done')&&!localStorage.getItem(HIST_KEY)){
     setTimeout(()=>q('cmd-input')&&toast('💡 Astuce : Ctrl+K pour la palette de commandes'),2000);
