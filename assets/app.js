@@ -28,6 +28,46 @@ function updateUndoUI(){
   if(r)r.disabled=redoStack.length===0;
 }
 
+/* Snapshot des vertex colors de chaque mesh (clone Float32Array) */
+function _snapshotColors(){
+  if(!mesh)return null;
+  const snaps=[];
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry?.attributes?.color)return;
+    snaps.push({obj:n,arr:new Float32Array(n.geometry.attributes.color.array)});
+  });
+  return snaps.length?snaps:null;
+}
+/* Restore depuis un snapshot */
+function _restoreColors(snaps){
+  if(!snaps)return;
+  snaps.forEach(s=>{
+    const col=s.obj.geometry?.attributes?.color;
+    if(!col)return;
+    col.array.set(s.arr);col.needsUpdate=true;
+  });
+}
+
+/* Snapshot rotation+position+scale du mesh */
+function _snapshotTransform(){
+  if(!mesh)return null;
+  return{
+    rot:mesh.rotation.toArray(),
+    pos:mesh.position.toArray(),
+    scl:mesh.scale.toArray(),
+    rxv:rx,ryv:ry,panXv:panX,panYv:panY,modelScaleV:modelScale,
+  };
+}
+function _restoreTransform(t){
+  if(!mesh||!t)return;
+  mesh.rotation.fromArray(t.rot);
+  mesh.position.fromArray(t.pos);
+  mesh.scale.fromArray(t.scl);
+  rx=t.rxv;ry=t.ryv;panX=t.panXv;panY=t.panYv;modelScale=t.modelScaleV;
+  const sl=q('scale-sl');if(sl)sl.value=Math.round(modelScale*100);
+  const ll=q('scale-lbl');if(ll)ll.textContent=Math.round(modelScale*100)+'%';
+}
+
 /* ══════════════════════════════════════════════
    COMMAND PALETTE — Ctrl/Cmd + K
    ══════════════════════════════════════════════ */
@@ -866,7 +906,12 @@ function initGlobalDrop(){
 function autoOrient(){
   if(!mesh){toast('Aucun modèle',true);return}
   toast('Analyse orientation…');
-  setTimeout(()=>_doAutoOrient(),30);
+  const before=_snapshotTransform();
+  setTimeout(()=>{
+    _doAutoOrient();
+    const after=_snapshotTransform();
+    if(before&&after){pushUndo({label:'Auto-orientation',undo:()=>_restoreTransform(before),redo:()=>_restoreTransform(after)})}
+  },30);
 }
 function _doAutoOrient(){
   // 24 orientations possibles (rotations 90° sur axes principaux)
@@ -1666,11 +1711,22 @@ function inferCols(){const p=(q('prompt').value||q('prompt2').value||'').toLower
 
 function setBatch(n,el){batchN=n;document.querySelectorAll('.batch-btn').forEach(b=>b.classList.remove('on'));el.classList.add('on');q('batch-tray').classList.remove('on');batchResults=[];updateCost()}
 
+let _scaleBefore=null,_scaleTimer=null;
 function setScale(v){
+  if(!_scaleBefore)_scaleBefore=_snapshotTransform();
   modelScale=v/100;
   if(mesh&&mesh.userData.baseScale)mesh.scale.setScalar(mesh.userData.baseScale*modelScale);
   q('scale-lbl').textContent=v+'%';
   if(hist.length)showSpecs(hist[0]);
+  // Debounce : push undo apres 500ms d'inactivite
+  clearTimeout(_scaleTimer);
+  _scaleTimer=setTimeout(()=>{
+    const before=_scaleBefore,after=_snapshotTransform();
+    _scaleBefore=null;
+    if(before&&after&&JSON.stringify(before.scl)!==JSON.stringify(after.scl)){
+      pushUndo({label:'Changement d\'échelle',undo:()=>_restoreTransform(before),redo:()=>_restoreTransform(after)});
+    }
+  },500);
 }
 
 function toggleCompare(){
@@ -1731,6 +1787,7 @@ function toast(msg,type=''){const t=q('toast');t.textContent=msg;t.className='to
    + COLORIZE FROM IMAGE — projection caméra
    ══════════════════════════════════════════════ */
 let paintMode=false,paintColor='#9eff3a',paintRadius=0.15;
+let _paintBeforeStroke=null;
 let paintColorHistory=['#9eff3a','#ff4f4f','#4fc3f7','#f5a623','#b06ef3','#ffffff','#1a1a1a','#76b900'];
 
 function togglePaint(){
@@ -1823,12 +1880,15 @@ function _handlePaintEvent(e){
 function clearPaint(){
   if(!mesh)return;
   if(!confirm('Effacer toute la peinture ?'))return;
+  const before=_snapshotColors();
   mesh.traverse(n=>{
     if(!n.isMesh||!n.geometry?.attributes?.color)return;
     const col=n.geometry.attributes.color;
     for(let i=0;i<col.count;i++)col.setXYZ(i,1,1,1);
     col.needsUpdate=true;
   });
+  const after=_snapshotColors();
+  if(before&&after)pushUndo({label:'Effacer peinture',undo:()=>_restoreColors(before),redo:()=>_restoreColors(after)});
   toast('Peinture effacée');
 }
 
@@ -1957,6 +2017,8 @@ function openColorize(){
 async function _doColorizeFromImage(file){
   if(!mesh){toast('Aucun modèle',true);return}
   toast('Colorisation depuis '+file.name+'…');
+  _ensureVertexColors();
+  const before=_snapshotColors();
   const dataUrl=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(file)});
   const img=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=dataUrl});
   // Cree un canvas pour echantillonner les pixels
@@ -1995,6 +2057,8 @@ async function _doColorizeFromImage(file){
     col.needsUpdate=true;
   });
   toast('✓ '+painted.toLocaleString('fr')+' vertices colorisés depuis '+file.name,'ok');
+  const after=_snapshotColors();
+  if(before&&after)pushUndo({label:'Colorisation depuis image',undo:()=>_restoreColors(before),redo:()=>_restoreColors(after)});
 }
 
 function _handleColorizeInput(e){
@@ -2087,7 +2151,13 @@ function toggleLightPanel(){
 }
 function renderLightPanel(){
   const el=q('light-cards');if(!el)return;
-  el.innerHTML=Object.entries(LIGHTING_PRESETS).map(([k,p])=>`<div class="light-card${k===currentLighting?' on':''}" data-light="${k}" onclick="applyLightingPreset('${k}')">${p.name}</div>`).join('');
+  el.innerHTML=Object.entries(LIGHTING_PRESETS).map(([k,p])=>`<div class="light-card${k===currentLighting?' on':''}" data-light="${k}" onclick="setLightingByUser('${k}')">${p.name}</div>`).join('');
+}
+function setLightingByUser(name){
+  const prev=currentLighting;
+  if(name===prev)return;
+  applyLightingPreset(name);
+  pushUndo({label:'Éclairage '+(LIGHTING_PRESETS[name]?.name||name),undo:()=>applyLightingPreset(prev),redo:()=>applyLightingPreset(name)});
 }
 
 /* ══════════════════════════════════════════════
@@ -2184,11 +2254,23 @@ function init3(){
   cv.addEventListener('mousedown',e=>{
     // En mode mesure : capture le clic gauche au lieu de drag
     if(e.button===0&&measMode&&_handleMeasureClick(e)){e.preventDefault();return}
-    // En mode peinture : capture le clic + active drag pour brush continu
-    if(e.button===0&&paintMode){_handlePaintEvent(e);drag=true;mbtn=10;lx=e.clientX;ly=e.clientY;e.preventDefault();return}
+    // En mode peinture : snapshot AVANT le stroke, drag continu, push undo a mouseup
+    if(e.button===0&&paintMode){
+      _paintBeforeStroke=_snapshotColors();
+      _handlePaintEvent(e);drag=true;mbtn=10;lx=e.clientX;ly=e.clientY;e.preventDefault();return
+    }
     drag=true;mbtn=e.button;lx=e.clientX;ly=e.clientY;e.preventDefault()
   });
-  window.addEventListener('mouseup',()=>{drag=false;mbtn=-1});
+  window.addEventListener('mouseup',()=>{
+    // Si on terminait un stroke de peinture, push undo
+    if(mbtn===10&&paintMode&&_paintBeforeStroke){
+      const before=_paintBeforeStroke;
+      const after=_snapshotColors();
+      _paintBeforeStroke=null;
+      if(before&&after){pushUndo({label:'Coup de pinceau',undo:()=>_restoreColors(before),redo:()=>_restoreColors(after)})}
+    }
+    drag=false;mbtn=-1;
+  });
   window.addEventListener('mousemove',e=>{
     if(!drag||!mesh)return;
     if(mbtn===10&&paintMode){_handlePaintEvent(e);return} // brush continu
@@ -2220,6 +2302,8 @@ async function loadGLB(buf){
   if(!group.children.length){phMesh();return}mesh=group;finM()}catch(e){phMesh()}
 }
 function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THREE.Vector3();box.getSize(sz);const sc=2.2/Math.max(sz.x,sz.y,sz.z);const center=new THREE.Vector3();box.getCenter(center);mesh.position.sub(center.multiplyScalar(sc));mesh.scale.setScalar(sc);mesh.userData.baseScale=sc;scene.add(mesh);rx=ry=panX=panY=0;modelScale=1;const sw=q('scale-wrap');if(sw)sw.style.display='flex';const sl=q('scale-sl');if(sl)sl.value=100;const ll=q('scale-lbl');if(ll)ll.textContent='100%';
+  // Reset undo stack au chargement d'un nouveau mesh
+  undoStack.length=0;redoStack.length=0;updateUndoUI();
   // Active toujours les exports locaux dès qu'un mesh est chargé (peu importe le backend)
   q('ex-stl-local')?.classList.remove('dis');
   q('ex-obj-local')?.classList.remove('dis');
