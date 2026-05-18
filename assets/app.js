@@ -1797,7 +1797,11 @@ function toast(msg,type=''){const t=q('toast');t.textContent=msg;t.className='to
    + COLORIZE FROM IMAGE — projection caméra
    ══════════════════════════════════════════════ */
 let paintMode=false,paintColor='#9eff3a',paintRadius=0.15;
+let paintHardness=0.5; // 0 = soft falloff, 1 = bord net
+let paintBrushMode='soft'; // 'soft' | 'hard' | 'fill' | 'eyedrop'
+let paintFillAngle=35; // degres : angle entre normales pour la propagation flood fill
 let _paintBeforeStroke=null;
+let _faceAdjCache=null,_faceAdjCacheMesh=null; // cache d'adjacence des faces
 let paintColorHistory=['#9eff3a','#ff4f4f','#4fc3f7','#f5a623','#b06ef3','#ffffff','#1a1a1a','#76b900'];
 
 function togglePaint(){
@@ -1818,6 +1822,28 @@ function setPaintColor(c){
   if(!paintColorHistory.includes(c)){paintColorHistory.unshift(c);paintColorHistory=paintColorHistory.slice(0,8);renderPaintHistory()}
 }
 function setPaintRadius(v){paintRadius=v;const lbl=q('paint-radius-val');if(lbl)lbl.textContent=v.toFixed(2)}
+function setPaintHardness(v){
+  paintHardness=v;
+  const lbl=q('paint-hardness-val');if(lbl)lbl.textContent=Math.round(v*100)+'%';
+}
+function setBrushMode(m){
+  paintBrushMode=m;
+  document.querySelectorAll('.brush-mode').forEach(el=>el.classList.toggle('on',el.dataset.brush===m));
+  // Affiche/cache les controles selon le mode
+  q('paint-radius-row')?.classList.toggle('hidden',m==='fill'||m==='eyedrop');
+  q('paint-hardness-row')?.classList.toggle('hidden',m==='fill'||m==='eyedrop'||m==='hard');
+  q('paint-fill-row')?.classList.toggle('hidden',m!=='fill');
+  // Curseur indicatif
+  const cv=q('cv');if(cv){
+    cv.style.cursor=m==='eyedrop'?'crosshair':m==='fill'?'pointer':'auto';
+  }
+  if(m==='eyedrop')toast('Pipette : clic sur le mesh pour piocher une couleur');
+  else if(m==='fill')toast('Remplissage : clic sur une partie pour la peindre entièrement');
+}
+function setPaintFillAngle(v){
+  paintFillAngle=v;const lbl=q('paint-fill-angle-val');if(lbl)lbl.textContent=v+'°';
+  // Invalide le cache d'adjacence pour recalcul si le mesh a change
+}
 function renderPaintHistory(){
   const el=q('paint-history');if(!el)return;
   el.innerHTML=paintColorHistory.map(c=>`<button class="paint-swatch" style="background:${c}" onclick="setPaintColor('${c}')"></button>`).join('');
@@ -1842,7 +1868,8 @@ function _ensureVertexColors(){
   });
 }
 
-/* Peint à la position cliquée — affecte tous les vertices dans le rayon */
+/* Peint à la position cliquée — affecte tous les vertices dans le rayon
+   Hardness 0 = falloff smooth, 1 = remplacement total bord net */
 function _paintAtPoint(point,obj){
   if(!obj?.geometry)return 0;
   const g=obj.geometry;
@@ -1851,28 +1878,136 @@ function _paintAtPoint(point,obj){
   if(!col)return 0;
   const c=new THREE.Color(paintColor);
   let painted=0;
-  // Convertir point monde -> coord locale de l'objet
   const local=point.clone();
   obj.worldToLocal(local);
-  const r2=paintRadius*paintRadius;
+  const r=paintRadius;
+  const r2=r*r;
+  // Force le bord net si mode 'hard' OU hardness === 1
+  const hard=paintBrushMode==='hard'||paintHardness>=0.999;
+  // Plateau central (zone d'opacite totale) defini par hardness
+  const innerR=r*paintHardness;
   for(let i=0;i<pos.count;i++){
     const dx=pos.getX(i)-local.x,dy=pos.getY(i)-local.y,dz=pos.getZ(i)-local.z;
     const d2=dx*dx+dy*dy+dz*dz;
-    if(d2<r2){
-      // Falloff softer au bord
-      const t=1-d2/r2;
-      const r=col.getX(i)+(c.r-col.getX(i))*t;
-      const v=col.getY(i)+(c.g-col.getY(i))*t;
-      const b=col.getZ(i)+(c.b-col.getZ(i))*t;
-      col.setXYZ(i,r,v,b);
-      painted++;
+    if(d2>=r2)continue;
+    let t;
+    if(hard){t=1}
+    else{
+      const d=Math.sqrt(d2);
+      if(d<=innerR)t=1;
+      else t=1-(d-innerR)/(r-innerR);
     }
+    col.setXYZ(i,
+      col.getX(i)+(c.r-col.getX(i))*t,
+      col.getY(i)+(c.g-col.getY(i))*t,
+      col.getZ(i)+(c.b-col.getZ(i))*t
+    );
+    painted++;
   }
   col.needsUpdate=true;
   return painted;
 }
 
-function _handlePaintEvent(e){
+/* Construit la carte d'adjacence des faces : merge des vertices proches
+   pour gerer les meshes non-indexed et trouver les faces voisines */
+function _buildFaceAdjacency(obj){
+  if(_faceAdjCache&&_faceAdjCacheMesh===obj)return _faceAdjCache;
+  const g=obj.geometry;
+  const pos=g.attributes.position;
+  const idx=g.index;
+  const fcount=idx?idx.count/3:pos.count/3;
+  // Map "x,y,z" arrondi -> liste de face indices qui ont ce vertex
+  const vertToFaces=new Map();
+  const eps=1e-4;
+  const round=v=>Math.round(v/eps);
+  const faceVerts=new Array(fcount); // pour chaque face : [i0,i1,i2] (indices vertices)
+  for(let f=0;f<fcount;f++){
+    const i0=idx?idx.getX(f*3):f*3,i1=idx?idx.getX(f*3+1):f*3+1,i2=idx?idx.getX(f*3+2):f*3+2;
+    faceVerts[f]=[i0,i1,i2];
+    [i0,i1,i2].forEach(vi=>{
+      const k=round(pos.getX(vi))+','+round(pos.getY(vi))+','+round(pos.getZ(vi));
+      if(!vertToFaces.has(k))vertToFaces.set(k,[]);
+      vertToFaces.get(k).push(f);
+    });
+  }
+  // Pour chaque face : voisins = faces qui partagent au moins 1 vertex (même pos)
+  const adj=new Array(fcount);
+  for(let f=0;f<fcount;f++){
+    const seen=new Set();
+    faceVerts[f].forEach(vi=>{
+      const k=round(pos.getX(vi))+','+round(pos.getY(vi))+','+round(pos.getZ(vi));
+      (vertToFaces.get(k)||[]).forEach(nf=>{if(nf!==f)seen.add(nf)});
+    });
+    adj[f]=[...seen];
+  }
+  // Calcule normales par face
+  const normals=new Array(fcount);
+  const tA=new THREE.Vector3(),tB=new THREE.Vector3(),tC=new THREE.Vector3();
+  for(let f=0;f<fcount;f++){
+    const [i0,i1,i2]=faceVerts[f];
+    tA.set(pos.getX(i0),pos.getY(i0),pos.getZ(i0));
+    tB.set(pos.getX(i1),pos.getY(i1),pos.getZ(i1));
+    tC.set(pos.getX(i2),pos.getY(i2),pos.getZ(i2));
+    const e1=tB.clone().sub(tA),e2=tC.clone().sub(tA);
+    normals[f]=e1.cross(e2).normalize();
+  }
+  _faceAdjCache={faceVerts,adj,normals,fcount};
+  _faceAdjCacheMesh=obj;
+  return _faceAdjCache;
+}
+
+/* Flood fill par adjacence + angle entre normales */
+function _floodFillFromFace(obj,startFace){
+  if(!obj?.geometry)return 0;
+  const g=obj.geometry;const col=g.attributes.color;if(!col)return 0;
+  const data=_buildFaceAdjacency(obj);
+  const c=new THREE.Color(paintColor);
+  const angleRad=paintFillAngle*Math.PI/180;
+  const cosTh=Math.cos(angleRad);
+  const visited=new Uint8Array(data.fcount);
+  const queue=[startFace];visited[startFace]=1;
+  let painted=0;
+  while(queue.length){
+    const f=queue.pop();
+    // Peint les 3 vertices de cette face
+    data.faceVerts[f].forEach(vi=>{
+      col.setXYZ(vi,c.r,c.g,c.b);painted++;
+    });
+    const n0=data.normals[f];
+    data.adj[f].forEach(nf=>{
+      if(visited[nf])return;
+      const n1=data.normals[nf];
+      const dot=n0.dot(n1);
+      if(dot>=cosTh){visited[nf]=1;queue.push(nf)}
+    });
+  }
+  col.needsUpdate=true;
+  return painted;
+}
+
+/* Pipette : lit la couleur du vertex le plus proche du hit */
+function _eyedropAtHit(hit){
+  const obj=hit.object;const g=obj.geometry;const col=g.attributes.color;const pos=g.attributes.position;
+  if(!col||!pos){toast('Aucune couleur a piocher',true);return}
+  // Trouve le vertex le plus proche du point d'impact (en local)
+  const local=hit.point.clone();obj.worldToLocal(local);
+  let bestI=-1,bestD2=Infinity;
+  for(let i=0;i<pos.count;i++){
+    const dx=pos.getX(i)-local.x,dy=pos.getY(i)-local.y,dz=pos.getZ(i)-local.z;
+    const d2=dx*dx+dy*dy+dz*dz;
+    if(d2<bestD2){bestD2=d2;bestI=i}
+  }
+  if(bestI<0)return;
+  const r=col.getX(bestI),v=col.getY(bestI),b=col.getZ(bestI);
+  const hex='#'+[r,v,b].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('');
+  setPaintColor(hex);
+  const inp=q('paint-color-input');if(inp)inp.value=hex;
+  toast('🎨 Couleur piochée : '+hex,'ok');
+  // Quitte automatiquement le mode pipette apres une pioche
+  setBrushMode('soft');
+}
+
+function _handlePaintEvent(e,isInitialClick){
   if(!paintMode||!mesh)return false;
   const cv=q('cv');const rect=cv.getBoundingClientRect();
   const mouse=new THREE.Vector2(
@@ -1883,6 +2018,19 @@ function _handlePaintEvent(e){
   const hits=ray.intersectObject(mesh,true);
   if(!hits.length)return true;
   const h=hits[0];
+  if(paintBrushMode==='eyedrop'){
+    if(isInitialClick)_eyedropAtHit(h);
+    return true;
+  }
+  if(paintBrushMode==='fill'){
+    if(!isInitialClick)return true; // un seul fill par clic
+    // Snapshot pour undo avant fill (override car normalement on snapshot dans mousedown)
+    if(!_paintBeforeStroke)_paintBeforeStroke=_snapshotColors();
+    const painted=_floodFillFromFace(h.object,h.faceIndex);
+    toast('🪣 Rempli : '+painted.toLocaleString('fr')+' vertices','ok');
+    return true;
+  }
+  // Soft / Hard brush
   _paintAtPoint(h.point,h.object);
   return true;
 }
@@ -2267,17 +2415,23 @@ function init3(){
     // En mode peinture : snapshot AVANT le stroke, drag continu, push undo a mouseup
     if(e.button===0&&paintMode){
       _paintBeforeStroke=_snapshotColors();
-      _handlePaintEvent(e);drag=true;mbtn=10;lx=e.clientX;ly=e.clientY;e.preventDefault();return
+      _handlePaintEvent(e,true); // isInitialClick=true
+      // En mode fill / eyedrop on ne suit pas le drag
+      if(paintBrushMode==='fill'||paintBrushMode==='eyedrop'){e.preventDefault();return}
+      drag=true;mbtn=10;lx=e.clientX;ly=e.clientY;e.preventDefault();return
     }
     drag=true;mbtn=e.button;lx=e.clientX;ly=e.clientY;e.preventDefault()
   });
   window.addEventListener('mouseup',()=>{
     // Si on terminait un stroke de peinture, push undo
-    if(mbtn===10&&paintMode&&_paintBeforeStroke){
+    if(paintMode&&_paintBeforeStroke){
       const before=_paintBeforeStroke;
       const after=_snapshotColors();
       _paintBeforeStroke=null;
-      if(before&&after){pushUndo({label:'Coup de pinceau',undo:()=>_restoreColors(before),redo:()=>_restoreColors(after)})}
+      if(before&&after){
+        const label=paintBrushMode==='fill'?'Remplissage':'Coup de pinceau';
+        pushUndo({label,undo:()=>_restoreColors(before),redo:()=>_restoreColors(after)});
+      }
     }
     drag=false;mbtn=-1;
   });
@@ -2312,8 +2466,9 @@ async function loadGLB(buf){
   if(!group.children.length){phMesh();return}mesh=group;finM()}catch(e){phMesh()}
 }
 function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THREE.Vector3();box.getSize(sz);const sc=2.2/Math.max(sz.x,sz.y,sz.z);const center=new THREE.Vector3();box.getCenter(center);mesh.position.sub(center.multiplyScalar(sc));mesh.scale.setScalar(sc);mesh.userData.baseScale=sc;scene.add(mesh);rx=ry=panX=panY=0;modelScale=1;const sw=q('scale-wrap');if(sw)sw.style.display='flex';const sl=q('scale-sl');if(sl)sl.value=100;const ll=q('scale-lbl');if(ll)ll.textContent='100%';
-  // Reset undo stack au chargement d'un nouveau mesh
+  // Reset undo stack + cache d'adjacence au chargement d'un nouveau mesh
   undoStack.length=0;redoStack.length=0;updateUndoUI();
+  _faceAdjCache=null;_faceAdjCacheMesh=null;
   // Active toujours les exports locaux dès qu'un mesh est chargé (peu importe le backend)
   q('ex-stl-local')?.classList.remove('dis');
   q('ex-obj-local')?.classList.remove('dis');

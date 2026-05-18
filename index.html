@@ -350,18 +350,46 @@
         <span>🎨 Peindre le mesh</span>
         <button class="meas-close" onclick="togglePaint()">✕</button>
       </div>
-      <div class="meas-help">Clic + drag sur le mesh pour peindre. Export 3MF (gratuit, AMS multi-color) ou STL avec vertex colors.</div>
+
+      <!-- Mode de brush -->
+      <div class="brush-modes">
+        <button class="brush-mode on" data-brush="soft" onclick="setBrushMode('soft')" title="Pinceau doux (avec falloff)" aria-label="Pinceau doux">🖌 Doux</button>
+        <button class="brush-mode" data-brush="hard" onclick="setBrushMode('hard')" title="Pinceau dur (bord net)" aria-label="Pinceau dur">⬤ Dur</button>
+        <button class="brush-mode" data-brush="fill" onclick="setBrushMode('fill')" title="Remplir une partie (flood fill)" aria-label="Remplissage">🪣 Remplir</button>
+        <button class="brush-mode" data-brush="eyedrop" onclick="setBrushMode('eyedrop')" title="Pipette" aria-label="Pipette">💧 Pipette</button>
+      </div>
+
+      <!-- Couleur active + picker + pipette -->
       <div style="display:flex;align-items:center;gap:8px">
-        <input type="color" id="paint-color-input" value="#9eff3a" oninput="setPaintColor(this.value)" style="width:36px;height:32px;border:none;background:transparent;cursor:pointer">
+        <input type="color" id="paint-color-input" value="#9eff3a" oninput="setPaintColor(this.value)" style="width:36px;height:32px;border:none;background:transparent;cursor:pointer" aria-label="Choisir une couleur">
         <div class="paint-color-display" id="paint-color-display" style="background:#9eff3a"></div>
         <span style="flex:1;font-family:var(--mono);font-size:11px;color:var(--t3)">Couleur active</span>
       </div>
+
       <div class="paint-history" id="paint-history"></div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="font-family:var(--mono);font-size:11px;color:var(--t2);min-width:50px">Brush</label>
-        <input type="range" min="0.03" max="0.6" step="0.01" value="0.15" id="paint-radius-sl" oninput="setPaintRadius(+this.value)" style="flex:1;accent-color:var(--ac)">
+
+      <!-- Slider Brush size (cache en mode fill/eyedrop) -->
+      <div id="paint-radius-row" style="display:flex;align-items:center;gap:8px">
+        <label style="font-family:var(--mono);font-size:11px;color:var(--t2);min-width:55px">Taille</label>
+        <input type="range" min="0.03" max="0.6" step="0.01" value="0.15" id="paint-radius-sl" oninput="setPaintRadius(+this.value)" style="flex:1;accent-color:var(--ac)" aria-label="Taille du brush">
         <span id="paint-radius-val" style="font-family:var(--mono);font-size:11px;color:var(--ac);min-width:40px;text-align:right">0.15</span>
       </div>
+
+      <!-- Slider Hardness (cache en mode hard/fill/eyedrop) -->
+      <div id="paint-hardness-row" style="display:flex;align-items:center;gap:8px">
+        <label style="font-family:var(--mono);font-size:11px;color:var(--t2);min-width:55px">Netteté</label>
+        <input type="range" min="0" max="1" step="0.05" value="0.5" id="paint-hardness-sl" oninput="setPaintHardness(+this.value)" style="flex:1;accent-color:var(--ac)" aria-label="Netteté du brush">
+        <span id="paint-hardness-val" style="font-family:var(--mono);font-size:11px;color:var(--ac);min-width:40px;text-align:right">50%</span>
+      </div>
+
+      <!-- Slider Angle (uniquement en mode fill) -->
+      <div id="paint-fill-row" class="hidden" style="display:flex;align-items:center;gap:8px">
+        <label style="font-family:var(--mono);font-size:11px;color:var(--t2);min-width:55px">Sensibilité</label>
+        <input type="range" min="5" max="90" step="1" value="35" id="paint-fill-angle-sl" oninput="setPaintFillAngle(+this.value)" style="flex:1;accent-color:var(--ac)" aria-label="Angle de tolérance flood fill">
+        <span id="paint-fill-angle-val" style="font-family:var(--mono);font-size:11px;color:var(--ac);min-width:40px;text-align:right">35°</span>
+      </div>
+      <div class="meas-help" style="font-size:10px;color:var(--t3)" id="paint-mode-help">Doux : falloff au bord · Dur : remplacement total · Remplir : flood par partie (utilise l'angle entre normales) · Pipette : pioche une couleur</div>
+
       <div style="display:flex;gap:5px">
         <button class="meas-clear" onclick="clearPaint()" style="flex:1">↺ Effacer</button>
         <button class="meas-clear" onclick="export3MFWithColors()" style="flex:2;border-color:var(--ac);color:var(--ac)">📦 Export 3MF couleur</button>

@@ -739,6 +739,16 @@ body::before{
 .paint-history{display:flex;flex-wrap:wrap;gap:4px}
 .paint-swatch{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--b2);cursor:pointer;transition:all .15s var(--ease)}
 .paint-swatch:hover{transform:scale(1.15);border-color:var(--t)}
+.brush-modes{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.brush-mode{
+  padding:6px 4px;border-radius:7px;border:1.5px solid var(--b2);
+  background:var(--bg3);color:var(--t2);font-family:var(--mono);font-size:10px;
+  font-weight:700;cursor:pointer;transition:all .15s var(--ease);
+  text-align:center;white-space:nowrap;
+}
+.brush-mode:hover{color:var(--t);border-color:var(--b3)}
+.brush-mode.on{border-color:var(--ac);color:var(--ac);background:var(--ac3);box-shadow:0 0 10px rgba(158,255,58,.25)}
+.hidden{display:none!important}
 
 /* Hollow HUD */
 .hollow-hud{width:280px}
