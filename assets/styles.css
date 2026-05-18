@@ -605,34 +605,166 @@ body::before{
 /* ── RESPONSIVE MOBILE ── */
 .mob-nav{display:none}
 @media(max-width:768px){
-  html,body{overflow:auto;height:auto}
-  .app{grid-template-rows:44px auto;grid-template-columns:1fr;width:100%;height:auto;min-height:100vh;padding-bottom:60px}
-  .top{grid-column:1;padding:0 12px;gap:6px}
+  html,body{overflow-x:hidden;overflow-y:auto;height:auto;width:100vw;max-width:100vw}
+  .app{grid-template-rows:44px auto;grid-template-columns:1fr;width:100vw;max-width:100vw;height:auto;min-height:100vh;padding-bottom:60px;overflow-x:hidden}
+
+  /* ── TOP BAR mobile : compacte ── */
+  .top{grid-column:1;padding:0 10px;gap:5px;max-width:100vw;overflow:hidden}
   .logo-s{display:none}
+  .logo-t{font-size:13px}
+  .top-sep{display:none}
   .chip:not(.top-stage){display:none}
-  .top-right{gap:6px}
-  .credit-chip{font-size:11px;padding:3px 8px}
-  .L{grid-column:1;border-right:none;border-bottom:1px solid var(--b2);height:auto;overflow:visible;display:none}
+  .top-right{gap:5px;flex-shrink:1;min-width:0}
+  .bk-sel{padding:2px;gap:2px;flex-shrink:1;min-width:0}
+  .bk-btn{padding:4px 7px;font-size:10px}
+  /* Sur mobile : icone Guide seul, sans le label texte */
+  .help-btn{padding:5px 8px;font-size:0;gap:0}
+  .help-btn svg{width:13px;height:13px}
+  .credit-chip{font-size:10px;padding:3px 7px;white-space:nowrap;flex-shrink:0}
+  #crd-val{font-size:10px}
+
+  /* ── PANELS ── */
+  .L{grid-column:1;border-right:none;border-bottom:1px solid var(--b2);height:auto;overflow-x:hidden;width:100vw;max-width:100vw;display:none}
   .L.mob-on{display:flex}
   .L .sec.grow{overflow:visible;flex:unset}
-  .C{grid-column:1;height:calc(100vw * 0.75);min-height:280px;display:none}
+  .sec{padding:10px 12px;max-width:100vw;overflow:hidden}
+  .C{grid-column:1;height:calc(100vw * 0.75);min-height:280px;display:none;width:100vw;max-width:100vw;overflow:hidden}
   .C.mob-on{display:flex}
-  .R{grid-column:1;border-left:none;border-top:1px solid var(--b2);height:auto;min-height:300px;display:none}
+  .R{grid-column:1;border-left:none;border-top:1px solid var(--b2);height:auto;min-height:300px;display:none;width:100vw;max-width:100vw;overflow-x:hidden}
   .R.mob-on{display:flex}
-.q-grid{grid-template-columns:repeat(3,1fr)}
+
+  /* ── Grilles mode et qualité ── */
+  .tabs{flex-wrap:nowrap}
+  .tab{font-size:11px;padding:6px 2px;min-width:0}
+  .q-grid{grid-template-columns:repeat(3,1fr);gap:3px}
+  .q-card{padding:7px 3px}
+  .q-card-name{font-size:13px}
+  .q-card-cr,.q-card-time{font-size:10px}
   .ig{grid-template-columns:repeat(4,1fr)}
-  .pp-bar{flex-wrap:wrap}
-  .pp-btn{font-size:12px;padding:5px 8px}
-  .gb{padding:14px}
-  .toggle-row{padding:9px 11px}
+
+  /* ── Post-processing bar : 2 colonnes sur mobile ── */
+  .pp-bar{flex-wrap:wrap;padding:10px 12px}
+  .pp-bar-grid{grid-template-columns:repeat(2,1fr);gap:6px}
+  .pp-btn{font-size:11px;padding:7px 9px}
+  .pp-btn-sub{max-width:100%;font-size:10px}
+
+  /* ── Material grid : 4 cols (8 items / 2 rangées) ── */
+  .mat-grid{grid-template-columns:repeat(4,1fr)}
+  .mat-card{padding:6px 3px}
+  .mat-name{font-size:11px}
+  .mat-den{font-size:9px}
+
+  /* ── Printer grid : 1 colonne pleine largeur ── */
+  .pr-grid{grid-template-columns:1fr}
+  .pr-card{padding:9px 11px}
+  .pr-desc{max-height:none}
+
+  /* ── Nozzle row : wrap ── */
+  .nz-row{flex-wrap:wrap}
+
+  /* ── TRELLIS resolution/texture grids ── */
+  .tr-res-grid{gap:3px}
+  .tr-res-card,.tr-tex-card{padding:6px 3px}
+  .tr-res-name,.tr-tex-name{font-size:11px}
+  .tr-res-sub{font-size:9px}
+  /* TRELLIS sliders rows : label plus court */
+  .tr-sl-row label{font-size:11px;min-width:90px}
+  .tr-sl-val{font-size:10px;min-width:24px}
+  /* Presets TRELLIS sur mobile : moins de padding */
+  .tr-preset{padding:6px 4px;font-size:10px}
+
+  /* ── Cost row + batch row ── */
+  .cost-row{padding:6px 10px}
+  .cost-label,.cost-val{font-size:11px}
+  .batch-row{flex-wrap:wrap;gap:6px}
+  .batch-lbl{font-size:11px}
+  .batch-btn{padding:3px 7px;font-size:11px}
+
+  /* ── Generate button ── */
+  .gb{padding:13px;font-size:14px}
+  .gb-stop{font-size:13px;padding:10px}
+
+  /* ── Toggles ── */
+  .toggle-row,.tr-toggle-row{padding:8px 10px}
+  .toggle-label,.tr-toggle-lbl{font-size:12px}
+  .toggle-sub,.tr-toggle-sub{font-size:10px}
+
+  /* ── Mobile nav ── */
   .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:56px;background:var(--bg);border-top:1px solid var(--b2);z-index:20;padding:0}
   .mob-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;cursor:pointer;color:var(--t3);font-family:var(--mono);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;transition:color .15s;padding:0}
   .mob-tab.on{color:var(--ac)}
   .mob-tab svg{transition:stroke .15s}
   .mob-tab.on svg{stroke:var(--ac)}
+
+  /* ── Viewer bar ── */
   .hb{font-size:10px;padding:3px 10px;bottom:68px}
-  .vtb{padding:6px 10px}
-  .ib{width:32px;height:32px}
+  .vtb{padding:6px 10px;flex-wrap:wrap;gap:6px}
+  .ib{width:30px;height:30px}
+  .ib.w{padding:0 8px;font-size:11px}
+  .scale-wrap input[type=range]{width:60px}
+
+  /* ── Right panel ── */
   .r-pane.on{min-height:300px}
-  .hist{min-height:200px}
+  .r-tab{font-size:10px;padding:9px 2px}
+  .hist{min-height:200px;padding:8px}
+  .hi{padding:7px}
+  .hi-prev{height:90px}
+
+  /* ── Specs ── */
+  .specs-wrap{padding:8px 10px}
+  .spec-row{padding:5px 0;gap:6px}
+  .spec-val{font-size:11px;word-break:break-word}
+  .spec-section-h{font-size:10px}
+
+  /* ── Export ── */
+  .exp-wrap{padding:8px 10px}
+  .ec{padding:8px}
+  .en2{font-size:12px}
+  .ed2{font-size:10px}
+  .ex-badge{font-size:8px;padding:2px 5px;margin-left:3px}
+  .ex-cat{font-size:9px}
+
+  /* ── Modale guide : full screen sur mobile ── */
+  .modal-bg{padding:0}
+  .guide-modal{width:100vw;max-width:100vw;height:100vh;max-height:100vh;border-radius:0;padding:0}
+  .modal{width:95vw;max-width:95vw}
+  .guide-head{padding:14px 16px}
+  .guide-t{font-size:15px}
+  .guide-tabs{padding:6px 10px;gap:3px}
+  .guide-tab{padding:6px 9px;font-size:10px}
+  .guide-body{padding:16px 18px}
+  .guide-pane h3{font-size:13px}
+  .guide-pane p,.guide-pane ol,.guide-pane ul,.guide-pane li{font-size:12px}
+  .g-table{font-size:10px}
+  .g-table th,.g-table td{padding:5px 6px}
+
+  /* Tip et warn boxes plus compacts */
+  .ex-tip,.tr-tip,.spec-warn,.guide-warn,.guide-tip{font-size:10px;padding:7px 9px}
+
+  /* ── Drop zones ── */
+  .drop{padding:14px 10px}
+  .drop p{font-size:10px}
+
+  /* ── Inputs ── */
+  .inp,.ta{font-size:12px;padding:8px 10px}
+  .ta{min-height:60px}
+
+  /* ── Fix universel : tout enfant overflow ── */
+  *{max-width:100vw}
+  img,svg,canvas{max-width:100%;height:auto}
+}
+
+/* ── Très petit mobile (<400px) : encore plus compact ── */
+@media(max-width:400px){
+  .pp-bar-grid{grid-template-columns:1fr 1fr}
+  .pp-btn{font-size:10px;padding:6px 7px}
+  .pp-btn-head{font-size:11px}
+  .mat-grid{grid-template-columns:repeat(3,1fr)}
+  .bk-btn{font-size:9px;padding:4px 6px}
+  .credit-chip{padding:3px 6px}
+  #crd-val{display:inline;font-size:9px}
+  .top{gap:4px;padding:0 8px}
+  .top-right{gap:3px}
+  .logo-t{font-size:12px}
+  .guide-tab{padding:5px 6px;font-size:9px}
 }
