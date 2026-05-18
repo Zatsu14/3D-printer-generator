@@ -668,6 +668,13 @@ body::before{
 .light-card:hover{color:var(--t);border-color:var(--b3)}
 .light-card.on{border-color:var(--ac);color:var(--ac);background:var(--ac3);box-shadow:0 0 12px rgba(158,255,58,.25)}
 
+/* Paint HUD */
+.paint-hud{width:280px}
+.paint-color-display{width:36px;height:32px;border-radius:7px;border:2px solid var(--b2);box-shadow:0 0 12px currentColor}
+.paint-history{display:flex;flex-wrap:wrap;gap:4px}
+.paint-swatch{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--b2);cursor:pointer;transition:all .15s var(--ease)}
+.paint-swatch:hover{transform:scale(1.15);border-color:var(--t)}
+
 /* Hollow HUD */
 .hollow-hud{width:280px}
 .hollow-stats{display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--b2)}
