@@ -38,7 +38,15 @@
     </div>
     <div class="pane on" id="pane-text">
       <textarea class="ta" id="prompt" maxlength="1024" placeholder="Décris ton objet : forme, matière, style…" oninput="q('cr').textContent=this.value.length"></textarea>
-      <div class="ct"><span id="cr">0</span>/1024</div>
+      <div class="prompt-row">
+        <button class="enh-btn" onclick="toggleEnhancerPanel()" title="Enrichir le prompt (gratuit)">✨ Enrichir</button>
+        <div class="ct"><span id="cr">0</span>/1024</div>
+      </div>
+      <div class="enh-pop" id="enh-pop">
+        <div class="enh-pop-h">Style d'enrichissement</div>
+        <div class="enh-styles" id="enh-styles"></div>
+        <button class="enh-apply" onclick="enhancePrompt();toggleEnhancerPanel()">✨ Appliquer · gratuit · auto FR→EN</button>
+      </div>
       <input class="inp" id="neg" placeholder="Négatif : texte, logos, flou…"/>
     </div>
     <div class="pane" id="pane-image">
@@ -61,7 +69,10 @@
     </div>
     <div class="pane" id="pane-hybrid">
       <textarea class="ta" id="prompt2" maxlength="1024" placeholder="Description + image…" style="min-height:60px" oninput="q('cr2').textContent=this.value.length"></textarea>
-      <div class="ct"><span id="cr2">0</span>/1024</div>
+      <div class="prompt-row">
+        <button class="enh-btn" onclick="toggleEnhancerPanel()" title="Enrichir le prompt (gratuit)">✨ Enrichir</button>
+        <div class="ct"><span id="cr2">0</span>/1024</div>
+      </div>
       <div class="drop" id="drop3" onclick="q('fi3').click()" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="ddr(event,3,1)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--t3)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <p>Image de référence</p>
