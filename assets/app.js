@@ -396,6 +396,346 @@ function meshHasTextures(){
 }
 
 /* ══════════════════════════════════════════════
+   IMPORT MODÈLES EXTERNES  (GLB / STL / OBJ / 3MF)
+   100% client-side, aucun appel API.
+   ══════════════════════════════════════════════ */
+async function importModel(e){
+  const file=e?.target?.files?.[0]||e;
+  if(!file)return;
+  await _importFile(file);
+  if(e?.target)e.target.value=''; // reset pour réimporter le même
+}
+
+async function _importFile(file){
+  const name=file.name||'imported';
+  const ext=name.toLowerCase().split('.').pop();
+  if(!['glb','gltf','stl','obj','3mf'].includes(ext)){
+    toast('Format non supporté : '+ext,true);return;
+  }
+  if(!scene)init3();
+  toast('Import '+name+'…');
+  try{
+    const buf=await file.arrayBuffer();
+    if(mesh){scene.remove(mesh);mesh=null}
+    if(ext==='glb'||ext==='gltf')await loadGLB(buf);
+    else if(ext==='stl')loadSTL(buf);
+    else if(ext==='obj')_loadOBJ(new TextDecoder().decode(buf));
+    else if(ext==='3mf')await _load3MF(buf);
+    if(!mesh){toast('Échec import — fichier invalide',true);return}
+    // Affichage viewer + activation UI
+    q('cv').style.display='block';q('emp').style.display='none';
+    const impId='imp_'+Date.now().toString(36);
+    const blob=new Blob([buf],{type:'application/octet-stream'});
+    const blobUrl=URL.createObjectURL(blob);
+    mUrls={glb:blobUrl,_taskId:impId,_imported:true,_importedName:name};
+    origUrl=blobUrl;origThumb=null;ppTaskId=null;
+    q('br').disabled=false;q('bw').disabled=false;q('bc').disabled=false;
+    q('ex-glb')?.classList.remove('dis');q('ex-bambu')?.classList.remove('dis');
+    q('hb').classList.add('on');
+    setStage('Modèle importé · '+name,true);
+    // Add to history
+    addH({id:impId,prompt:'📦 Import : '+name,mode:'import',status:'done',quality:'imported',glb:blobUrl});
+    // Stocke en IDB pour persistance
+    await idbPut(impId,buf);
+    setTimeout(()=>{const th=captureCanvasThumb();updH(impId,'done',th||null,blobUrl,true);showSpecs(hist[0]);showFils()},800);
+    toast('✓ '+name+' importé','ok');
+  }catch(err){console.error(err);toast('Erreur import : '+err.message.slice(0,50),true)}
+}
+
+/* Parser OBJ simplifié (v / vn / vt / f) */
+function _loadOBJ(txt){
+  const positions=[],normals=[],uvs=[];
+  const finalPos=[],finalNorm=[],finalUV=[];
+  txt.split('\n').forEach(line=>{
+    const parts=line.trim().split(/\s+/);
+    const cmd=parts[0];
+    if(cmd==='v')positions.push([+parts[1],+parts[2],+parts[3]]);
+    else if(cmd==='vn')normals.push([+parts[1],+parts[2],+parts[3]]);
+    else if(cmd==='vt')uvs.push([+parts[1],+parts[2]]);
+    else if(cmd==='f'){
+      // f v/vt/vn  (triangulate if quad+)
+      const verts=parts.slice(1).map(p=>p.split('/').map(x=>parseInt(x)||0));
+      for(let i=1;i<verts.length-1;i++){
+        [verts[0],verts[i],verts[i+1]].forEach(v=>{
+          const p=positions[v[0]-1];if(p)finalPos.push(...p);
+          const t=uvs[v[1]-1];if(t)finalUV.push(...t);
+          const n=normals[v[2]-1];if(n)finalNorm.push(...n);
+        });
+      }
+    }
+  });
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(finalPos),3));
+  if(finalNorm.length===finalPos.length)g.setAttribute('normal',new THREE.BufferAttribute(new Float32Array(finalNorm),3));
+  else g.computeVertexNormals();
+  if(finalUV.length*3===finalPos.length*2)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(finalUV),2));
+  mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0xc0c0c8,roughness:.45,metalness:.1}));
+  finM();
+}
+
+/* Parser 3MF minimaliste — extrait le .model XML du ZIP */
+async function _load3MF(buf){
+  // 3MF = ZIP avec 3D/3dmodel.model dedans (XML). On parse en cherchant les vertex + triangles.
+  // Pour simplicité on tente d'extraire la 1ère partie comme texte (3MF ZIP simples) :
+  try{
+    const u8=new Uint8Array(buf);
+    // Cherche le marqueur "3dmodel.model" et lit le XML qui suit (très approximatif)
+    const dec=new TextDecoder('utf-8',{fatal:false});
+    const text=dec.decode(u8);
+    const start=text.indexOf('<vertices>');
+    if(start<0)throw new Error('3MF parsing simple a échoué — utilise OBJ/STL/GLB');
+    const verts=[];const tris=[];
+    const vRe=/<vertex\s+x="([^"]+)"\s+y="([^"]+)"\s+z="([^"]+)"\s*\/>/g;
+    let m;while((m=vRe.exec(text)))verts.push([+m[1],+m[2],+m[3]]);
+    const tRe=/<triangle\s+v1="(\d+)"\s+v2="(\d+)"\s+v3="(\d+)"\s*\/>/g;
+    while((m=tRe.exec(text)))tris.push([+m[1],+m[2],+m[3]]);
+    if(!verts.length||!tris.length)throw new Error('3MF vide');
+    const pos=new Float32Array(tris.length*9);
+    for(let i=0;i<tris.length;i++){
+      for(let j=0;j<3;j++){
+        const v=verts[tris[i][j]];if(!v)continue;
+        pos[i*9+j*3]=v[0];pos[i*9+j*3+1]=v[1];pos[i*9+j*3+2]=v[2];
+      }
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    g.computeVertexNormals();
+    mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0xc0c0c8,roughness:.45,metalness:.1}));
+    finM();
+  }catch(e){throw new Error('3MF non lisible — convertis en STL ou OBJ')}
+}
+
+/* Drag & drop global sur toute la fenêtre */
+function initGlobalDrop(){
+  let dragCounter=0;
+  const overlay=q('drop-global');
+  window.addEventListener('dragenter',e=>{
+    if(!e.dataTransfer?.types?.includes('Files'))return;
+    e.preventDefault();dragCounter++;if(overlay)overlay.classList.add('on');
+  });
+  window.addEventListener('dragleave',e=>{
+    e.preventDefault();dragCounter--;if(dragCounter<=0){dragCounter=0;if(overlay)overlay.classList.remove('on')}
+  });
+  window.addEventListener('dragover',e=>{e.preventDefault()});
+  window.addEventListener('drop',async e=>{
+    e.preventDefault();dragCounter=0;if(overlay)overlay.classList.remove('on');
+    const f=e.dataTransfer?.files?.[0];if(!f)return;
+    const ext=f.name.toLowerCase().split('.').pop();
+    if(['glb','gltf','stl','obj','3mf'].includes(ext))await _importFile(f);
+    else if(['jpg','jpeg','png','webp'].includes(ext)){
+      // Image -> bascule en mode Image et l'ajoute
+      setMode('image');
+      const r=new FileReader();
+      r.onload=ev=>{imgs[1].push({b64:ev.target.result.split(',')[1],url:ev.target.result,type:f.type,name:f.name});renderGrid(1,1);toast('✓ Image ajoutée','ok')};
+      r.readAsDataURL(f);
+    }else toast('Format non supporté : '+ext,true);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   AUTO-ORIENTATION pour impression 3D
+   Teste 6 orientations principales (axes ±X/±Y/±Z)
+   et choisit celle qui minimise les overhangs.
+   ══════════════════════════════════════════════ */
+function autoOrient(){
+  if(!mesh){toast('Aucun modèle',true);return}
+  toast('Analyse orientation…');
+  setTimeout(()=>_doAutoOrient(),30);
+}
+function _doAutoOrient(){
+  // 24 orientations possibles (rotations 90° sur axes principaux)
+  const orientations=[
+    {name:'défaut',euler:[0,0,0]},
+    {name:'rotation 90° X',euler:[Math.PI/2,0,0]},
+    {name:'rotation 180° X',euler:[Math.PI,0,0]},
+    {name:'rotation -90° X',euler:[-Math.PI/2,0,0]},
+    {name:'rotation 90° Z',euler:[0,0,Math.PI/2]},
+    {name:'rotation -90° Z',euler:[0,0,-Math.PI/2]},
+  ];
+  let best=null;
+  const original=mesh.rotation.clone();
+  orientations.forEach(o=>{
+    mesh.rotation.set(o.euler[0],o.euler[1],o.euler[2]);
+    mesh.updateMatrixWorld(true);
+    const score=_scoreOrientation();
+    if(!best||score.total<best.score.total){best={o,score:score}}
+  });
+  // Appliquer la meilleure
+  if(best){
+    mesh.rotation.set(best.o.euler[0],best.o.euler[1],best.o.euler[2]);
+    rx=mesh.rotation.x;ry=mesh.rotation.y;
+    mesh.updateMatrixWorld(true);
+    // Recentrer
+    const box=new THREE.Box3().setFromObject(mesh);
+    const center=new THREE.Vector3();box.getCenter(center);
+    mesh.position.sub(center);mesh.position.y-=box.min.y-mesh.position.y; // pose sur le plateau
+    mesh.position.y=-box.min.y+(box.max.y-box.min.y)/2; // recentre en hauteur visuelle
+    toast(`✓ Orientation : ${best.o.name} (${best.score.overhangPct}% overhangs, ${best.score.contactArea} contact)`,'ok');
+  }else{
+    mesh.rotation.copy(original);
+    toast('Orientation inchangée',true);
+  }
+}
+
+/* Score d'orientation : overhangs + surface de contact au plateau */
+function _scoreOrientation(){
+  if(!mesh)return{total:Infinity,overhangPct:0,contactArea:0};
+  let downFaces=0,totalFaces=0,contactArea=0;
+  const tmpA=new THREE.Vector3(),tmpB=new THREE.Vector3(),tmpC=new THREE.Vector3();
+  // Trouver Y min pour détecter "au plateau"
+  const box=new THREE.Box3().setFromObject(mesh);const minY=box.min.y;const tol=(box.max.y-minY)*0.02;
+  mesh.traverse(n=>{
+    if(!n.isMesh||!n.geometry)return;
+    const g=n.geometry;const pos=g.attributes.position;const idx=g.index;
+    if(!pos)return;
+    const m=n.matrixWorld;
+    const facesCount=idx?idx.count/3:pos.count/3;
+    const stride=Math.max(1,Math.floor(facesCount/3000));
+    for(let i=0;i<facesCount;i+=stride){
+      const i0=idx?idx.getX(i*3):i*3,i1=idx?idx.getX(i*3+1):i*3+1,i2=idx?idx.getX(i*3+2):i*3+2;
+      tmpA.fromBufferAttribute(pos,i0).applyMatrix4(m);
+      tmpB.fromBufferAttribute(pos,i1).applyMatrix4(m);
+      tmpC.fromBufferAttribute(pos,i2).applyMatrix4(m);
+      const ux=tmpB.x-tmpA.x,uy=tmpB.y-tmpA.y,uz=tmpB.z-tmpA.z;
+      const vx=tmpC.x-tmpA.x,vy=tmpC.y-tmpA.y,vz=tmpC.z-tmpA.z;
+      const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+      const lenN=Math.sqrt(nx*nx+ny*ny+nz*nz);if(lenN<1e-6)continue;
+      const dotY=ny/lenN;
+      totalFaces++;
+      if(dotY<-0.3)downFaces++;
+      // Contact au plateau : face quasi-horizontale orientée vers le bas ET proche du minY
+      const avgY=(tmpA.y+tmpB.y+tmpC.y)/3;
+      if(dotY<-0.95&&Math.abs(avgY-minY)<tol){
+        const area=lenN/2;contactArea+=area;
+      }
+    }
+  });
+  const overhangPct=totalFaces>0?Math.round(downFaces/totalFaces*100):0;
+  const total=overhangPct*10-Math.min(contactArea*5,200); // bonus contact, malus overhang
+  return{total,overhangPct,contactArea:Math.round(contactArea*100)/100};
+}
+
+/* ══════════════════════════════════════════════
+   MESURES dans le viewer (distance + angle)
+   ══════════════════════════════════════════════ */
+let measMode=false,measTool='distance',measPoints=[],measMarkers=[],measLines=[],measLabels=[];
+
+function toggleMeasure(){
+  measMode=!measMode;
+  q('meas-hud')?.classList.toggle('on',measMode);
+  q('b-measure')?.classList.toggle('on',measMode);
+  if(!measMode)clearMeasures();
+  else{toast('Mode mesure : clic sur le mesh pour poser des points');setSecMode(false)}
+}
+function setMeasTool(t){
+  measTool=t;
+  document.querySelectorAll('.meas-tool[data-tool]').forEach(el=>el.classList.toggle('on',el.dataset.tool===t));
+  q('meas-help').textContent=t==='distance'?'Clic sur 2 points sur le mesh':'Clic sur 3 points (vertex, sommet, autre côté)';
+  clearMeasures();
+}
+function clearMeasures(){
+  measPoints=[];
+  measMarkers.forEach(m=>scene.remove(m));measMarkers=[];
+  measLines.forEach(l=>scene.remove(l));measLines=[];
+  measLabels.forEach(l=>{if(l.parentNode)l.parentNode.removeChild(l)});measLabels=[];
+  q('meas-result').textContent='';
+}
+function _addMeasMarker(p){
+  const g=new THREE.SphereGeometry(0.025,12,12);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x9eff3a}));
+  m.position.copy(p);scene.add(m);measMarkers.push(m);
+}
+function _addMeasLine(a,b){
+  const g=new THREE.BufferGeometry().setFromPoints([a,b]);
+  const m=new THREE.Line(g,new THREE.LineBasicMaterial({color:0x9eff3a,linewidth:2}));
+  scene.add(m);measLines.push(m);
+}
+
+/* Click handler pour mesures (appelé depuis init3) */
+function _handleMeasureClick(e){
+  if(!measMode||!mesh)return false;
+  const cv=q('cv');const rect=cv.getBoundingClientRect();
+  const mouse=new THREE.Vector2(
+    ((e.clientX-rect.left)/rect.width)*2-1,
+    -((e.clientY-rect.top)/rect.height)*2+1
+  );
+  const ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObject(mesh,true);
+  if(!hits.length)return true;
+  const p=hits[0].point.clone();
+  measPoints.push(p);_addMeasMarker(p);
+  // Distance : 2 points
+  if(measTool==='distance'){
+    if(measPoints.length===2){
+      _addMeasLine(measPoints[0],measPoints[1]);
+      // Conversion vers mm via baseScale
+      const bsc=mesh.userData?.baseScale||1;
+      const dist=measPoints[0].distanceTo(measPoints[1])/bsc*100*modelScale;
+      q('meas-result').textContent='📏 '+dist.toFixed(2)+' mm';
+      q('meas-help').textContent='Clic pour mesurer une nouvelle distance';
+      measPoints=[];
+    }
+  }
+  // Angle : 3 points (sommet au milieu)
+  else if(measTool==='angle'){
+    if(measPoints.length===3){
+      _addMeasLine(measPoints[0],measPoints[1]);
+      _addMeasLine(measPoints[1],measPoints[2]);
+      const v1=measPoints[0].clone().sub(measPoints[1]).normalize();
+      const v2=measPoints[2].clone().sub(measPoints[1]).normalize();
+      const ang=Math.acos(Math.max(-1,Math.min(1,v1.dot(v2))))*180/Math.PI;
+      q('meas-result').textContent='📐 '+ang.toFixed(1)+'°';
+      q('meas-help').textContent='Clic pour mesurer un nouvel angle';
+      measPoints=[];
+    }
+  }
+  return true;
+}
+
+/* ══════════════════════════════════════════════
+   SECTION TRANSVERSALE (clipping plane)
+   ══════════════════════════════════════════════ */
+let secMode=false,secAxis='x',secValue=100,secPlane=null;
+
+function toggleSection(){setSecMode(!secMode)}
+function setSecMode(on){
+  secMode=on;
+  q('sec-hud')?.classList.toggle('on',on);
+  q('b-section')?.classList.toggle('on',on);
+  if(!on){
+    // désactiver clipping
+    if(renderer)renderer.localClippingEnabled=false;
+    if(mesh)mesh.traverse(n=>{if(n.isMesh)n.material.clippingPlanes=null});
+    q('sec-result').textContent='Plan désactivé';
+  }else{
+    if(measMode)toggleMeasure();
+    _updateSectionPlane();
+  }
+}
+function setSecAxis(a){
+  secAxis=a;
+  document.querySelectorAll('.meas-tool[data-axis]').forEach(el=>el.classList.toggle('on',el.dataset.axis===a));
+  _updateSectionPlane();
+}
+function setSecValue(v){secValue=v;_updateSectionPlane()}
+function _updateSectionPlane(){
+  if(!mesh||!secMode)return;
+  if(!renderer)return;
+  renderer.localClippingEnabled=true;
+  const box=new THREE.Box3().setFromObject(mesh);
+  const sz=new THREE.Vector3();box.getSize(sz);
+  const cen=new THREE.Vector3();box.getCenter(cen);
+  const ratio=secValue/100; // -1..1
+  let normal,constant;
+  if(secAxis==='x'){normal=new THREE.Vector3(-1,0,0);constant=cen.x+sz.x/2*ratio}
+  else if(secAxis==='y'){normal=new THREE.Vector3(0,-1,0);constant=cen.y+sz.y/2*ratio}
+  else{normal=new THREE.Vector3(0,0,-1);constant=cen.z+sz.z/2*ratio}
+  const plane=new THREE.Plane(normal,constant);
+  mesh.traverse(n=>{if(n.isMesh){n.material.clippingPlanes=[plane];n.material.clipShadows=true;n.material.side=THREE.DoubleSide;n.material.needsUpdate=true}});
+  q('sec-result').textContent='Plan '+secAxis.toUpperCase()+' · '+secValue+'%';
+}
+
+/* ══════════════════════════════════════════════
    EXPORT LOCAL — STL binaire + OBJ depuis le mesh Three.js
    Aucun appel API, aucun crédit, conversion 100% client.
    ══════════════════════════════════════════════ */
@@ -1019,7 +1359,11 @@ function init3(){
   const rim=new THREE.DirectionalLight(0xd4f542,0.8);rim.position.set(0,3,-8);scene.add(rim);
   const front=new THREE.DirectionalLight(0xfff8f0,0.5);front.position.set(0,-1,6);scene.add(front);
   const grid=new THREE.GridHelper(10,22,0x1c1c24,0x131318);grid.position.y=-1.2;scene.add(grid);
-  cv.addEventListener('mousedown',e=>{drag=true;mbtn=e.button;lx=e.clientX;ly=e.clientY;e.preventDefault()});
+  cv.addEventListener('mousedown',e=>{
+    // En mode mesure : capture le clic gauche au lieu de drag
+    if(e.button===0&&measMode&&_handleMeasureClick(e)){e.preventDefault();return}
+    drag=true;mbtn=e.button;lx=e.clientX;ly=e.clientY;e.preventDefault()
+  });
   window.addEventListener('mouseup',()=>{drag=false;mbtn=-1});
   window.addEventListener('mousemove',e=>{if(!drag||!mesh)return;const dx=e.clientX-lx,dy=e.clientY-ly;if(mbtn===2||e.shiftKey){panX+=dx*.005;panY-=dy*.005;mesh.position.x=panX;mesh.position.y=panY}else{ry+=dx*.007;rx+=dy*.007;rx=Math.max(-1.5,Math.min(1.5,rx));mesh.rotation.y=ry;mesh.rotation.x=rx}lx=e.clientX;ly=e.clientY});
   cv.addEventListener('contextmenu',e=>e.preventDefault());
@@ -1048,6 +1392,10 @@ function finM(){const box=new THREE.Box3().setFromObject(mesh);const sz=new THRE
   // Active toujours les exports locaux dès qu'un mesh est chargé (peu importe le backend)
   q('ex-stl-local')?.classList.remove('dis');
   q('ex-obj-local')?.classList.remove('dis');
+  // Active les outils viewer (orient / measure / section)
+  q('b-orient')?.removeAttribute('disabled');
+  q('b-measure')?.removeAttribute('disabled');
+  q('b-section')?.removeAttribute('disabled');
 }
 function phMesh(){mesh=new THREE.Mesh(new THREE.TorusKnotGeometry(.55,.18,256,32),new THREE.MeshStandardMaterial({color:0xc8e83a,roughness:.1,metalness:.7}));scene.add(mesh)}
 
@@ -1350,6 +1698,7 @@ window.addEventListener('load',()=>{
   init3();
   initTouch();
   initMob();
+  initGlobalDrop();
   initMatGrid();
   // Restore profil imprimante
   const savedPrinter=localStorage.getItem('form3d_printer');

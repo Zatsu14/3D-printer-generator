@@ -602,6 +602,71 @@ body::before{
 
 /* Better hover on r-tab */
 .r-tab.on::after{box-shadow:0 0 8px var(--ac)}
+
+/* ══════════════════════════════════════════════
+   TOOLBAR — sep + boutons orient/measure/section
+   ══════════════════════════════════════════════ */
+.ib-sep{width:1px;height:18px;background:var(--b2);margin:0 2px;align-self:center}
+.ib:not(:disabled).on{background:linear-gradient(135deg,var(--ac3),transparent);border-color:var(--ac);color:var(--ac);box-shadow:0 0 12px rgba(158,255,58,.3)}
+#b-import{color:var(--neon);border-color:rgba(79,255,213,.3)}
+#b-import:hover{background:var(--neon2);box-shadow:0 0 16px rgba(79,255,213,.3)}
+
+/* ══════════════════════════════════════════════
+   MESURES HUD
+   ══════════════════════════════════════════════ */
+.meas-hud,.sec-hud{
+  position:absolute;top:14px;left:14px;z-index:7;
+  width:240px;padding:12px 14px;border-radius:13px;
+  background:linear-gradient(180deg,rgba(28,28,40,.92),rgba(15,15,24,.92));
+  backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+  border:1px solid rgba(158,255,58,.35);
+  box-shadow:0 12px 36px rgba(0,0,0,.5),0 0 24px rgba(158,255,58,.15);
+  display:none;flex-direction:column;gap:8px;
+  font-family:var(--mono);font-size:12px;color:var(--t);
+  animation:fade-up .3s var(--ease-out);
+}
+.meas-hud.on,.sec-hud.on{display:flex}
+.meas-head{display:flex;align-items:center;justify-content:space-between;font-weight:700;color:var(--ac);font-size:12px;letter-spacing:.04em;text-shadow:0 0 8px rgba(158,255,58,.3)}
+.meas-close{width:22px;height:22px;border-radius:6px;border:1px solid var(--b2);background:var(--bg2);color:var(--t2);font-size:11px;cursor:pointer;transition:all .15s var(--ease)}
+.meas-close:hover{border-color:var(--red);color:var(--red)}
+.meas-tools{display:flex;gap:3px}
+.meas-tool{flex:1;padding:5px 6px;border-radius:7px;border:1.5px solid var(--b2);background:var(--bg3);color:var(--t2);font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s var(--ease)}
+.meas-tool:hover{color:var(--t)}
+.meas-tool.on{border-color:var(--ac);color:var(--ac);background:var(--ac3);box-shadow:0 0 10px rgba(158,255,58,.25)}
+.meas-help{font-size:10px;color:var(--t3);line-height:1.5}
+.meas-result{font-size:18px;font-weight:700;color:var(--ac);text-shadow:0 0 12px rgba(158,255,58,.5);min-height:20px;text-align:center;padding:6px 0}
+.meas-clear{padding:6px;border-radius:7px;border:1.5px solid var(--b2);background:transparent;color:var(--t3);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s var(--ease)}
+.meas-clear:hover{border-color:var(--orange);color:var(--orange)}
+.sec-hud input[type=range]{width:100%;accent-color:var(--ac);cursor:pointer;margin-top:4px}
+
+/* ══════════════════════════════════════════════
+   DROP GLOBAL OVERLAY
+   ══════════════════════════════════════════════ */
+.drop-global{
+  position:fixed;inset:0;z-index:200;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(8,8,12,.7);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  pointer-events:none;
+}
+.drop-global.on{display:flex;animation:fade-up .2s var(--ease-out)}
+.drop-global-box{
+  padding:42px 48px;border-radius:18px;
+  background:linear-gradient(135deg,rgba(158,255,58,.12),rgba(79,255,213,.08));
+  border:2px dashed var(--ac);
+  box-shadow:0 0 60px rgba(158,255,58,.3);
+  text-align:center;color:var(--t);
+}
+.drop-global-box svg{color:var(--ac);filter:drop-shadow(0 0 12px rgba(158,255,58,.6));margin-bottom:14px}
+.drop-global-t{font-size:18px;font-weight:700;margin-bottom:8px}
+.drop-global-s{font-family:var(--mono);font-size:12px;color:var(--t2);line-height:1.7}
+
+/* Mobile : HUD plus compacts */
+@media(max-width:768px){
+  .meas-hud,.sec-hud{width:calc(100vw - 28px);top:8px;left:14px}
+  .drop-global-box{padding:28px 24px;margin:20px}
+  .drop-global-t{font-size:15px}
+}
 /* ── RESPONSIVE MOBILE ── */
 .mob-nav{display:none}
 @media(max-width:768px){
