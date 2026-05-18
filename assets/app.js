@@ -403,7 +403,17 @@ async function persistGlb(id,url){
 }
 
 function setQ(el,q2){quality=q2;document.querySelectorAll('.q-card').forEach(c=>c.classList.remove('on'));el.classList.add('on');updateCost()}
-function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));['text','image','multiview','hybrid'].forEach(p=>{const el=q('pane-'+p);if(el)el.classList.toggle('on',p===m)});updateCost()}
+function setMode(m){
+  // Bloque le switch vers un mode incompatible en TRELLIS
+  if(backend==='trellis'&&['text','multiview'].includes(m)){
+    toast('TRELLIS ne supporte que Image / Hybride',true);
+    return;
+  }
+  mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));
+  ['text','image','multiview','hybrid'].forEach(p=>{const el=q('pane-'+p);if(el)el.classList.toggle('on',p===m)});
+  updateCost();
+}
 function setRTab(t){document.querySelectorAll('.r-tab').forEach(el=>el.classList.toggle('on',el.dataset.rt===t));document.querySelectorAll('.r-pane').forEach(el=>el.classList.toggle('on',el.id==='rpane-'+t))}
 function updateCost(){
   if(backend==='trellis'){const cv=q('cost-val');if(cv)cv.textContent='Gratuit (local)';return}
@@ -2377,6 +2387,20 @@ function setBackend(b){
   document.body.classList.toggle('trellis-mode',b==='trellis');
   q('bk-tripo').classList.toggle('on',b==='tripo');
   q('bk-trellis').classList.toggle('on',b==='trellis');
+  // TRELLIS ne supporte que Image / Hybrid (necessite une image source)
+  // On désactive Texte et Multi-view, et on auto-switch si on était dessus
+  const incompat=['text','multiview'];
+  document.querySelectorAll('.tab').forEach(t=>{
+    const m=t.dataset.m;
+    const disabled=b==='trellis'&&incompat.includes(m);
+    t.classList.toggle('tab-disabled',disabled);
+    if(disabled){t.setAttribute('aria-disabled','true');t.setAttribute('title','TRELLIS nécessite une image — utilise Image ou Hybride')}
+    else{t.removeAttribute('aria-disabled');t.removeAttribute('title')}
+  });
+  if(b==='trellis'&&incompat.includes(mode)){
+    setMode('image');
+    toast('TRELLIS nécessite une image → mode Image activé');
+  }
   const trOpts=q('tr-opts');if(trOpts)trOpts.classList.toggle('on',b==='trellis');
   const crdChip=q('crd-chip');if(crdChip)crdChip.style.display=b==='tripo'?'':'none';
   const gbtn=q('gbtn');if(gbtn)gbtn.innerHTML=b==='trellis'?
