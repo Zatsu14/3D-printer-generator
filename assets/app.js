@@ -1799,9 +1799,16 @@ function toast(msg,type=''){const t=q('toast');t.textContent=msg;t.className='to
 let paintMode=false,paintColor='#9eff3a',paintRadius=0.15;
 let paintHardness=0.5; // 0 = soft falloff, 1 = bord net
 let paintBrushMode='soft'; // 'soft' | 'hard' | 'fill' | 'eyedrop'
-let paintFillAngle=35; // degres : angle entre normales pour la propagation flood fill
+let paintFillAngle=35; // degres : angle entre normales pour flood vertex mode
+let paintFillTolerance=30; // tolerance couleur RGB pour flood texture mode (0-100)
+let paintSurface='auto'; // 'auto' | 'texture' | 'vertex'
 let _paintBeforeStroke=null;
 let _faceAdjCache=null,_faceAdjCacheMesh=null; // cache d'adjacence des faces
+
+/* ─── Canvas texture painting state ─── */
+let paintCanvas=null,paintCtx=null,paintTexture=null;
+let _origMaterials=null; // sauvegarde des materials originaux pour restaurer
+let _paintModeIsTexture=false; // mode actif
 let paintColorHistory=['#9eff3a','#ff4f4f','#4fc3f7','#f5a623','#b06ef3','#ffffff','#1a1a1a','#76b900'];
 
 function togglePaint(){
@@ -1811,9 +1818,28 @@ function togglePaint(){
   if(paintMode){
     if(measMode)toggleMeasure();
     if(secMode)setSecMode(false);
-    _ensureVertexColors();
-    toast('Mode peinture · clic + drag sur le mesh pour peindre');
+    // Tente le mode texture (couvre vraiment) sinon fallback vertex colors
+    const wantTex=paintSurface!=='vertex';
+    let texOk=false;
+    if(wantTex)texOk=_enterTextureMode();
+    if(!texOk)_ensureVertexColors();
+    // MAJ UI
+    q('paint-surface-info').textContent=_paintModeIsTexture
+      ?'🖼 Mode texture (couvre la texture existante)'
+      :'⬡ Mode vertex colors (multi-color AMS)';
+    toast(_paintModeIsTexture?'Mode peinture sur texture · couvre les détails existants':'Mode peinture · clic + drag');
+  }else{
+    if(_paintModeIsTexture)_exitTextureMode(true); // keep les modifs pour le viewer
   }
+}
+
+function setPaintSurface(s){
+  paintSurface=s;
+  if(!paintMode)return;
+  // Re-toggle pour appliquer
+  if(s==='vertex'&&_paintModeIsTexture)_exitTextureMode(true);
+  else if(s==='texture'&&!_paintModeIsTexture){_ensureVertexColors();_enterTextureMode()}
+  q('paint-surface-info').textContent=_paintModeIsTexture?'🖼 Mode texture':'⬡ Mode vertex colors';
 }
 
 function setPaintColor(c){
@@ -1840,9 +1866,171 @@ function setBrushMode(m){
   if(m==='eyedrop')toast('Pipette : clic sur le mesh pour piocher une couleur');
   else if(m==='fill')toast('Remplissage : clic sur une partie pour la peindre entièrement');
 }
+
+/* ══════════════════════════════════════════════
+   PEINTURE SUR TEXTURE (CanvasTexture)
+   Bake la texture actuelle dans un canvas, remplace material.map,
+   les coups de pinceau ecrivent sur le canvas → couvre vraiment.
+   ══════════════════════════════════════════════ */
+function _meshHasUV(){
+  if(!mesh)return false;
+  let has=false;
+  mesh.traverse(n=>{if(n.isMesh&&n.geometry?.attributes?.uv)has=true});
+  return has;
+}
+
+function _enterTextureMode(){
+  if(_paintModeIsTexture||!mesh)return false;
+  if(!_meshHasUV()){toast('Pas de UV — mode vertex colors',true);return false}
+  // Trouve la meilleure texture source (la 1ere disponible) pour calibrer la taille
+  let srcImg=null,srcW=1024,srcH=1024;
+  mesh.traverse(n=>{
+    if(srcImg)return;
+    if(n.isMesh&&n.material?.map?.image){
+      srcImg=n.material.map.image;srcW=srcImg.width||1024;srcH=srcImg.height||1024;
+    }
+  });
+  // Cree le canvas avec la taille de la texture source (max 2048 pour les perf)
+  const W=Math.min(srcW,2048),H=Math.min(srcH,2048);
+  paintCanvas=document.createElement('canvas');
+  paintCanvas.width=W;paintCanvas.height=H;
+  paintCtx=paintCanvas.getContext('2d',{willReadFrequently:true});
+  // Initialement : bake la texture existante (ou blanc si rien)
+  if(srcImg){
+    try{paintCtx.drawImage(srcImg,0,0,W,H)}catch(e){paintCtx.fillStyle='#ffffff';paintCtx.fillRect(0,0,W,H)}
+  }else{
+    paintCtx.fillStyle='#cccccc';paintCtx.fillRect(0,0,W,H);
+  }
+  paintTexture=new THREE.CanvasTexture(paintCanvas);
+  paintTexture.flipY=false; // convention GLB
+  paintTexture.encoding=THREE.sRGBEncoding;
+  // Sauvegarde + applique à tous les meshes
+  _origMaterials=[];
+  mesh.traverse(n=>{
+    if(!n.isMesh)return;
+    _origMaterials.push({obj:n,map:n.material.map,vertexColors:n.material.vertexColors,color:n.material.color.clone()});
+    n.material.map=paintTexture;
+    n.material.vertexColors=false;
+    n.material.color.set(0xffffff);
+    n.material.needsUpdate=true;
+  });
+  _paintModeIsTexture=true;
+  return true;
+}
+
+function _exitTextureMode(keep){
+  if(!_paintModeIsTexture)return;
+  if(_origMaterials){
+    _origMaterials.forEach(o=>{
+      if(!keep)o.obj.material.map=o.map;
+      o.obj.material.vertexColors=o.vertexColors;
+      o.obj.material.color.copy(o.color);
+      o.obj.material.needsUpdate=true;
+    });
+  }
+  _origMaterials=null;
+  if(!keep){
+    paintTexture?.dispose?.();
+    paintTexture=null;paintCanvas=null;paintCtx=null;
+  }
+  _paintModeIsTexture=false;
+}
+
+/* Convertit hex '#rrggbb' en [r,g,b] 0-255 */
+function _hexToRgb(h){
+  h=h.replace('#','');
+  return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+}
+
+/* Snapshot ImageData du canvas (pour undo en mode texture) */
+function _snapshotCanvas(){
+  if(!paintCtx)return null;
+  return paintCtx.getImageData(0,0,paintCanvas.width,paintCanvas.height);
+}
+function _restoreCanvas(snap){
+  if(!paintCtx||!snap)return;
+  paintCtx.putImageData(snap,0,0);
+  if(paintTexture)paintTexture.needsUpdate=true;
+}
+
+/* Peint un cercle sur le canvas a (u,v) avec hardness et radius */
+function _paintCanvasAtUV(u,v){
+  if(!paintCtx)return;
+  const W=paintCanvas.width,H=paintCanvas.height;
+  const x=u*W,y=(1-v)*H; // flip Y pour GLB (flipY:false)
+  // Convert brush radius : 0.15 (default) → ~7% de la diagonale texture
+  const diag=Math.sqrt(W*W+H*H);
+  const r=Math.max(2,paintRadius*diag*0.18);
+  const hard=paintBrushMode==='hard'||paintHardness>=0.999;
+  if(hard){
+    paintCtx.fillStyle=paintColor;
+    paintCtx.beginPath();
+    paintCtx.arc(x,y,r,0,Math.PI*2);
+    paintCtx.fill();
+  }else{
+    // Brush mou : radial gradient avec plateau hardness
+    const [rr,gg,bb]=_hexToRgb(paintColor);
+    const grad=paintCtx.createRadialGradient(x,y,0,x,y,r);
+    grad.addColorStop(0,`rgba(${rr},${gg},${bb},1)`);
+    grad.addColorStop(Math.max(0,paintHardness),`rgba(${rr},${gg},${bb},1)`);
+    grad.addColorStop(1,`rgba(${rr},${gg},${bb},0)`);
+    paintCtx.fillStyle=grad;
+    paintCtx.fillRect(x-r,y-r,r*2,r*2);
+  }
+  paintTexture.needsUpdate=true;
+}
+
+/* Pipette canvas : lit la couleur au pixel (u,v) */
+function _eyedropCanvasAtUV(u,v){
+  if(!paintCtx)return null;
+  const W=paintCanvas.width,H=paintCanvas.height;
+  const x=Math.max(0,Math.min(W-1,Math.floor(u*W)));
+  const y=Math.max(0,Math.min(H-1,Math.floor((1-v)*H)));
+  const d=paintCtx.getImageData(x,y,1,1).data;
+  return'#'+[d[0],d[1],d[2]].map(c=>c.toString(16).padStart(2,'0')).join('');
+}
+
+/* Flood fill raster (4-connectivite) avec tolerance couleur */
+function _floodCanvasAtUV(u,v){
+  if(!paintCtx)return 0;
+  const W=paintCanvas.width,H=paintCanvas.height;
+  const startX=Math.floor(u*W),startY=Math.floor((1-v)*H);
+  const img=paintCtx.getImageData(0,0,W,H);
+  const data=img.data;
+  const idx0=(startY*W+startX)*4;
+  const target=[data[idx0],data[idx0+1],data[idx0+2]];
+  const [pr,pg,pb]=_hexToRgb(paintColor);
+  if(target[0]===pr&&target[1]===pg&&target[2]===pb)return 0; // deja la bonne couleur
+  const tol=paintFillTolerance*2.55; // 0-100 -> 0-255
+  const tol2=tol*tol*3; // dist² 3D dans RGB
+  const visited=new Uint8Array(W*H);
+  const stack=[[startX,startY]];
+  let painted=0;
+  while(stack.length){
+    const [x,y]=stack.pop();
+    if(x<0||x>=W||y<0||y>=H)continue;
+    const pi=y*W+x;
+    if(visited[pi])continue;
+    visited[pi]=1;
+    const di=pi*4;
+    const dr=data[di]-target[0],dg=data[di+1]-target[1],db=data[di+2]-target[2];
+    if(dr*dr+dg*dg+db*db>tol2)continue;
+    data[di]=pr;data[di+1]=pg;data[di+2]=pb;data[di+3]=255;
+    painted++;
+    stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+  paintCtx.putImageData(img,0,0);
+  paintTexture.needsUpdate=true;
+  return painted;
+}
 function setPaintFillAngle(v){
-  paintFillAngle=v;const lbl=q('paint-fill-angle-val');if(lbl)lbl.textContent=v+'°';
-  // Invalide le cache d'adjacence pour recalcul si le mesh a change
+  if(_paintModeIsTexture){
+    paintFillTolerance=v;
+    const lbl=q('paint-fill-angle-val');if(lbl)lbl.textContent=v+'%';
+  }else{
+    paintFillAngle=v;
+    const lbl=q('paint-fill-angle-val');if(lbl)lbl.textContent=v+'°';
+  }
 }
 function renderPaintHistory(){
   const el=q('paint-history');if(!el)return;
@@ -2018,26 +2206,57 @@ function _handlePaintEvent(e,isInitialClick){
   const hits=ray.intersectObject(mesh,true);
   if(!hits.length)return true;
   const h=hits[0];
+
+  // ── MODE TEXTURE (peinture sur CanvasTexture, couvre vraiment) ──
+  if(_paintModeIsTexture&&h.uv){
+    if(paintBrushMode==='eyedrop'){
+      if(!isInitialClick)return true;
+      const hex=_eyedropCanvasAtUV(h.uv.x,h.uv.y);
+      if(hex){setPaintColor(hex);const inp=q('paint-color-input');if(inp)inp.value=hex;toast('🎨 Couleur piochée : '+hex,'ok');setBrushMode('soft')}
+      return true;
+    }
+    if(paintBrushMode==='fill'){
+      if(!isInitialClick)return true;
+      const painted=_floodCanvasAtUV(h.uv.x,h.uv.y);
+      toast('🪣 Rempli : '+painted.toLocaleString('fr')+' pixels','ok');
+      return true;
+    }
+    // Brush soft / hard sur canvas
+    _paintCanvasAtUV(h.uv.x,h.uv.y);
+    return true;
+  }
+
+  // ── MODE VERTEX COLORS (fallback si pas de UV ou mode force) ──
   if(paintBrushMode==='eyedrop'){
     if(isInitialClick)_eyedropAtHit(h);
     return true;
   }
   if(paintBrushMode==='fill'){
-    if(!isInitialClick)return true; // un seul fill par clic
-    // Snapshot pour undo avant fill (override car normalement on snapshot dans mousedown)
+    if(!isInitialClick)return true;
     if(!_paintBeforeStroke)_paintBeforeStroke=_snapshotColors();
     const painted=_floodFillFromFace(h.object,h.faceIndex);
     toast('🪣 Rempli : '+painted.toLocaleString('fr')+' vertices','ok');
     return true;
   }
-  // Soft / Hard brush
   _paintAtPoint(h.point,h.object);
   return true;
 }
 
 function clearPaint(){
   if(!mesh)return;
-  if(!confirm('Effacer toute la peinture ?'))return;
+  if(!confirm(_paintModeIsTexture?'Restaurer la texture originale ?':'Effacer toute la peinture ?'))return;
+  if(_paintModeIsTexture&&paintCtx){
+    const before=_snapshotCanvas();
+    // Re-bake la texture originale (avant peinture) si possible
+    const orig=_origMaterials?.[0]?.map?.image;
+    if(orig){try{paintCtx.drawImage(orig,0,0,paintCanvas.width,paintCanvas.height)}catch(e){paintCtx.fillStyle='#cccccc';paintCtx.fillRect(0,0,paintCanvas.width,paintCanvas.height)}}
+    else{paintCtx.fillStyle='#cccccc';paintCtx.fillRect(0,0,paintCanvas.width,paintCanvas.height)}
+    paintTexture.needsUpdate=true;
+    const after=_snapshotCanvas();
+    if(before&&after)pushUndo({label:'Réinitialiser texture',undo:()=>_restoreCanvas(before),redo:()=>_restoreCanvas(after)});
+    toast('Texture restaurée');
+    return;
+  }
   const before=_snapshotColors();
   mesh.traverse(n=>{
     if(!n.isMesh||!n.geometry?.attributes?.color)return;
@@ -2414,25 +2633,36 @@ function init3(){
     if(e.button===0&&measMode&&_handleMeasureClick(e)){e.preventDefault();return}
     // En mode peinture : snapshot AVANT le stroke, drag continu, push undo a mouseup
     if(e.button===0&&paintMode){
-      _paintBeforeStroke=_snapshotColors();
-      _handlePaintEvent(e,true); // isInitialClick=true
-      // En mode fill / eyedrop on ne suit pas le drag
-      if(paintBrushMode==='fill'||paintBrushMode==='eyedrop'){e.preventDefault();return}
+      _paintBeforeStroke=_paintModeIsTexture?_snapshotCanvas():_snapshotColors();
+      _handlePaintEvent(e,true);
+      if(paintBrushMode==='fill'||paintBrushMode==='eyedrop'){
+        // Push undo immediat pour fill (pas de drag)
+        if(paintBrushMode==='fill'&&_paintBeforeStroke){
+          const before=_paintBeforeStroke;
+          const after=_paintModeIsTexture?_snapshotCanvas():_snapshotColors();
+          _paintBeforeStroke=null;
+          if(before&&after){
+            const restore=_paintModeIsTexture?_restoreCanvas:_restoreColors;
+            pushUndo({label:'Remplissage',undo:()=>restore(before),redo:()=>restore(after)});
+          }
+        }else{_paintBeforeStroke=null}
+        e.preventDefault();return
+      }
       drag=true;mbtn=10;lx=e.clientX;ly=e.clientY;e.preventDefault();return
     }
     drag=true;mbtn=e.button;lx=e.clientX;ly=e.clientY;e.preventDefault()
   });
   window.addEventListener('mouseup',()=>{
     // Si on terminait un stroke de peinture, push undo
-    if(paintMode&&_paintBeforeStroke){
+    if(paintMode&&_paintBeforeStroke&&mbtn===10){
       const before=_paintBeforeStroke;
-      const after=_snapshotColors();
+      const after=_paintModeIsTexture?_snapshotCanvas():_snapshotColors();
       _paintBeforeStroke=null;
       if(before&&after){
-        const label=paintBrushMode==='fill'?'Remplissage':'Coup de pinceau';
-        pushUndo({label,undo:()=>_restoreColors(before),redo:()=>_restoreColors(after)});
+        const restore=_paintModeIsTexture?_restoreCanvas:_restoreColors;
+        pushUndo({label:'Coup de pinceau',undo:()=>restore(before),redo:()=>restore(after)});
       }
-    }
+    }else if(_paintBeforeStroke&&mbtn!==10){_paintBeforeStroke=null}
     drag=false;mbtn=-1;
   });
   window.addEventListener('mousemove',e=>{

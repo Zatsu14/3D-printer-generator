@@ -351,6 +351,16 @@
         <button class="meas-close" onclick="togglePaint()">✕</button>
       </div>
 
+      <!-- Surface de peinture : texture ou vertex colors -->
+      <div class="paint-surface-row">
+        <div class="paint-surface-info" id="paint-surface-info">Mode actif</div>
+        <div class="paint-surface-tabs">
+          <button class="ps-tab" data-surf="auto" onclick="setPaintSurface('auto')">Auto</button>
+          <button class="ps-tab" data-surf="texture" onclick="setPaintSurface('texture')" title="Peint sur la texture — couvre les détails (logos, etc.)">🖼 Texture</button>
+          <button class="ps-tab" data-surf="vertex" onclick="setPaintSurface('vertex')" title="Peint en vertex colors — utile pour export 3MF AMS">⬡ Vertex</button>
+        </div>
+      </div>
+
       <!-- Mode de brush -->
       <div class="brush-modes">
         <button class="brush-mode on" data-brush="soft" onclick="setBrushMode('soft')" title="Pinceau doux (avec falloff)" aria-label="Pinceau doux">🖌 Doux</button>
