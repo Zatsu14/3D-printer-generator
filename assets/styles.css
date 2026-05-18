@@ -51,6 +51,9 @@ body.focus-mode .C{grid-column:1}
 .tab{flex:1;padding:6px 3px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-family:var(--mono);font-size:13px;color:var(--t3);transition:all .15s;text-align:center;font-weight:700}
 .tab:hover{color:var(--t2)}
 .tab.on{background:var(--ac);color:#080809}
+.tab.tab-disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through;position:relative}
+.tab.tab-disabled:hover{color:var(--t3)}
+.tab.tab-disabled::after{content:"🚫";position:absolute;top:-3px;right:1px;font-size:8px;opacity:.7}
 .pane{display:none;flex-direction:column;gap:5px}
 .pane.on{display:flex}
 .ta{width:100%;min-height:75px;resize:vertical;background:var(--bg3);border:1.5px solid var(--b2);border-radius:10px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--t);line-height:1.6;outline:none;transition:border-color .15s}
