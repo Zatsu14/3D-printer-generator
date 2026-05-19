@@ -2087,7 +2087,7 @@ function _restoreCanvas(snap){
 function _paintCanvasAtUV(u,v){
   if(!paintCtx)return;
   const W=paintCanvas.width,H=paintCanvas.height;
-  const x=u*W,y=(1-v)*H; // flip Y pour GLB (flipY:false)
+  const x=u*W,y=v*H; // GLB convention flipY:false : UV.y=0 -> top du canvas (pas d'inversion)
   // Convert brush radius : 0.15 (default) → ~7% de la diagonale texture
   const diag=Math.sqrt(W*W+H*H);
   const r=Math.max(2,paintRadius*diag*0.18);
@@ -2115,7 +2115,7 @@ function _eyedropCanvasAtUV(u,v){
   if(!paintCtx)return null;
   const W=paintCanvas.width,H=paintCanvas.height;
   const x=Math.max(0,Math.min(W-1,Math.floor(u*W)));
-  const y=Math.max(0,Math.min(H-1,Math.floor((1-v)*H)));
+  const y=Math.max(0,Math.min(H-1,Math.floor(v*H)));
   const d=paintCtx.getImageData(x,y,1,1).data;
   return'#'+[d[0],d[1],d[2]].map(c=>c.toString(16).padStart(2,'0')).join('');
 }
@@ -2124,7 +2124,7 @@ function _eyedropCanvasAtUV(u,v){
 function _floodCanvasAtUV(u,v){
   if(!paintCtx)return 0;
   const W=paintCanvas.width,H=paintCanvas.height;
-  const startX=Math.floor(u*W),startY=Math.floor((1-v)*H);
+  const startX=Math.floor(u*W),startY=Math.floor(v*H);
   const img=paintCtx.getImageData(0,0,W,H);
   const data=img.data;
   const idx0=(startY*W+startX)*4;
