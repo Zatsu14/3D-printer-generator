@@ -786,48 +786,163 @@
         <p>Bouton <b>🎯 Bambu Studio</b> dans l'onglet Export → tente d'ouvrir le modèle dans Bambu via le protocole <code>bambu-studio://</code>. Marche si Bambu est installé localement.</p>
       </div>
 
-      <!-- ─── NOUVEAU : Outils Viewer ─── -->
-      <div class="guide-pane" id="guide-tools" style="display:none">
-        <h3>🛠 Outils du viewer</h3>
+      <!-- ─── OUTILS VIEWER ─── -->
+      <div class="guide-pane" id="guide-tools">
+        <h3>🛠 Toolbar du viewer 3D</h3>
+        <p>La toolbar en haut du viewer regroupe tous les outils. Voici chacun en détail :</p>
+
+        <h3>📥 Import & 🎯 Orientation</h3>
         <div class="guide-card">
           <div class="g-card-h">📥 <b>Importer un modèle externe</b></div>
-          <p>Charge un modèle depuis ton ordinateur — pratique pour les fichiers téléchargés sur <a href="https://makerworld.com" target="_blank">MakerWorld</a>, Printables, Thingiverse :</p>
+          <p>Charge un modèle de ton ordi — pratique pour <a href="https://makerworld.com" target="_blank">MakerWorld</a>, Printables, Thingiverse.</p>
           <ul>
-            <li>Clique l'icône <b>📥</b> dans la toolbar du viewer</li>
-            <li>Ou <b>drag&drop</b> le fichier n'importe où sur la page</li>
+            <li>Bouton <b>📥</b> dans la toolbar OU <b>drag&drop</b> n'importe où sur la page (overlay néon)</li>
             <li>Formats : <b>.glb · .gltf · .stl · .obj · .3mf</b></li>
-            <li>Tu peux ensuite utiliser tous les outils (mesures, auto-orient, export local…)</li>
+            <li>Le modèle s'ajoute à l'historique automatiquement avec thumbnail</li>
+            <li>Persistance via IndexedDB (recharge OK après refresh)</li>
           </ul>
         </div>
         <div class="guide-card">
-          <div class="g-card-h">🎯 <b>Auto-orientation pour impression</b></div>
-          <p>Tourne automatiquement le modèle pour <b>minimiser les overhangs</b> et maximiser la surface de contact au plateau :</p>
+          <div class="g-card-h">🎯 <b>Auto-orientation impression</b></div>
+          <p>Tourne le modèle pour <b>minimiser les overhangs</b> + maximiser le contact plateau.</p>
           <ul>
-            <li>Teste 6 orientations principales (axes ±X/±Y/±Z)</li>
-            <li>Score = % overhangs - bonus surface de contact</li>
-            <li>Bouton 🎯 dans la toolbar du viewer</li>
-            <li>Le toast indique l'orientation choisie + métriques</li>
+            <li>Teste 6 orientations (axes ±X/±Y/±Z + rotations 90°)</li>
+            <li>Score = % overhangs - bonus surface plate</li>
+            <li>Toast : « rotation 90° X · 12% overhangs · 8.4 contact »</li>
+            <li>Ctrl+Z pour annuler</li>
           </ul>
         </div>
+
+        <h3>📏 Mesures & ✂ Section</h3>
         <div class="guide-card">
           <div class="g-card-h">📏 <b>Mesures distance / angle</b></div>
-          <p>Vérifie tes pièces avant impression :</p>
           <ul>
-            <li><b>Distance</b> : clic sur 2 points du mesh → distance en mm (tient compte du modelScale)</li>
-            <li><b>Angle</b> : clic sur 3 points (sommet au milieu) → angle en degrés</li>
-            <li>Bouton 📏 dans la toolbar</li>
-            <li>Utile pour vérifier les détails fins &lt; 0.8mm qui risquent de casser</li>
+            <li><b>Distance</b> : 2 clics sur le mesh → distance en mm (tient compte du modelScale)</li>
+            <li><b>Angle</b> : 3 clics (sommet au milieu) → angle en °</li>
+            <li>Utile pour vérifier les détails fins &lt; 0.8mm qui risquent de casser à l'impression</li>
           </ul>
         </div>
         <div class="guide-card">
           <div class="g-card-h">✂ <b>Section transversale</b></div>
-          <p>Coupe le modèle pour voir l'intérieur :</p>
           <ul>
-            <li>Choisis l'axe (X/Y/Z)</li>
-            <li>Slider -100% à +100% pour déplacer le plan</li>
-            <li>Idéal pour vérifier les épaisseurs de paroi</li>
+            <li>Choisis l'axe X/Y/Z + slider -100% à +100%</li>
+            <li>Trois.js clipping plane local · DoubleSide pour voir l'intérieur</li>
+            <li>Idéal pour contrôler les épaisseurs de paroi avant impression</li>
           </ul>
         </div>
+
+        <h3>⊙ Hollowing & 💡 Éclairage</h3>
+        <div class="guide-card">
+          <div class="g-card-h">⊙ <b>Hollowing estimator</b></div>
+          <ul>
+            <li>Slider paroi 0.5-5mm + toggle drain hole</li>
+            <li>Stats temps réel : poids initial / creux / économie en g, %, €</li>
+            <li>Preview rouge transparent pour visualiser la cavité</li>
+            <li>Le vrai hollowing s'effectue dans <b>Bambu Studio</b> (clic droit sur le modèle → Make hollow). FORM te donne juste l'estimation.</li>
+          </ul>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">💡 <b>Éclairage du viewer</b></div>
+          <p>5 ambiances : <b>Neon</b> (défaut) · <b>Studio</b> · <b>Dramatique</b> · <b>Plein air</b> · <b>Vitrine</b>.</p>
+          <p>Chaque preset modifie background + exposure + lumières. Sauvegardé en localStorage.</p>
+        </div>
+
+        <h3>🎨 Peinture (texture ou vertex)</h3>
+        <div class="guide-card">
+          <div class="g-card-h">🎨 <b>Mode peinture intelligent</b></div>
+          <p>3 surfaces de peinture (panneau Surface en haut du HUD) :</p>
+          <ul>
+            <li><b>Auto</b> (défaut) : texture si UV dispo, sinon vertex colors</li>
+            <li><b>🖼 Texture</b> : peint directement sur la texture canvas — <b>couvre</b> les logos / motifs existants</li>
+            <li><b>⬡ Vertex</b> : peint en vertex colors — nécessaire pour export 3MF AMS multi-color</li>
+          </ul>
+          <p>4 modes de brush :</p>
+          <ul>
+            <li><b>🖌 Doux</b> : falloff smooth au bord du pinceau</li>
+            <li><b>⬤ Dur</b> : remplacement total, bord net</li>
+            <li><b>🪣 Remplir</b> : flood fill par parties (sensibilité = angle ou tolérance couleur)</li>
+            <li><b>💧 Pipette</b> : pioche la couleur du mesh au clic</li>
+          </ul>
+          <p>Sliders <b>Taille</b>, <b>Netteté</b> (0-100%), <b>Sensibilité</b> selon le mode. Historique de 8 couleurs auto.</p>
+          <p><b>Export 3MF couleur</b> en 1 clic (gratuit, compatible Bambu AMS).</p>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">🖼 <b>Coloriser depuis une image</b></div>
+          <p>Charge une image, elle est projetée sur le mesh depuis l'angle caméra actuel. Idéal pour appliquer une photo de référence sur un modèle MakerWorld.</p>
+        </div>
+
+        <h3>🔄 Rotation, 📏 Hauteur & 🏛 Socle</h3>
+        <div class="guide-card">
+          <div class="g-card-h">🔄 <b>Rotation auto on/off</b></div>
+          <p>Toggle dans la toolbar (vert = activé). Auto-pause en mode peinture/mesure/drag. État sauvegardé.</p>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">📏 <b>Hauteur en mm (autosize)</b></div>
+          <p>Input numérique à côté du slider d'échelle dans la toolbar.</p>
+          <ul>
+            <li>Tape <code>150</code> → le modèle s'auto-redimensionne pour faire 150mm de haut</li>
+            <li>Synchronisé avec le slider d'échelle (%)</li>
+            <li>Le slider d'échelle (10-400%) reste utilisable pour ajuster en relatif</li>
+          </ul>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">🏛 <b>Socle / Plateforme</b></div>
+          <p>Bouton 🏛 ouvre un panneau dédié — utile pour les figurines fines qui ne tiennent pas debout.</p>
+          <ul>
+            <li>3 formes : <b>Disque</b> · <b>Hexagonal</b> · <b>Carré</b></li>
+            <li>Slider épaisseur 1-15mm (3mm par défaut)</li>
+            <li>Slider marge 0-100% autour du modèle (20% par défaut)</li>
+            <li>Suit les changements d'échelle automatiquement</li>
+          </ul>
+        </div>
+
+        <h3>↶ Undo / Redo & 🔍 Mode focus</h3>
+        <div class="guide-card">
+          <div class="g-card-h">↶ <b>Undo / Redo</b></div>
+          <p>Actions reversibles via <code>Ctrl+Z</code> / <code>Ctrl+Shift+Z</code> (ou boutons toolbar) :</p>
+          <ul>
+            <li>Coup de pinceau (1 stroke = 1 undo)</li>
+            <li>Auto-orientation</li>
+            <li>Changement d'échelle (debounced)</li>
+            <li>Colorisation depuis image</li>
+            <li>Effacer peinture</li>
+            <li>Changement d'éclairage</li>
+          </ul>
+        </div>
+        <div class="guide-card">
+          <div class="g-card-h">🔍 <b>Mode focus (F)</b></div>
+          <p>Cache les panneaux gauche/droite pour ne voir que le viewer pleine page. Appuie <code>F</code> ou clic sur l'icône.</p>
+        </div>
+
+        <h3>⌘K Command palette</h3>
+        <div class="guide-card">
+          <div class="g-card-h">⌘K <b>Palette de commandes</b></div>
+          <p>Spotlight-style : <code>Ctrl+K</code> ou bouton ⌘K dans la top bar.</p>
+          <ul>
+            <li>27 actions cataloguées (générer, switch backend, outils, exports…)</li>
+            <li>Fuzzy search sur label + tags</li>
+            <li><code>↑↓</code> naviguer · <code>Enter</code> exécuter · <code>Esc</code> fermer</li>
+          </ul>
+        </div>
+
+        <h3>🆓 Exports locaux gratuits</h3>
+        <div class="guide-card">
+          <div class="g-card-h"><b>STL · OBJ · 3MF couleur</b> — 0 crédit Tripo</div>
+          <p>Conversions client-side directement depuis le mesh Three.js :</p>
+          <ul>
+            <li><b>STL local</b> : binaire (84 bytes header + 50/triangle)</li>
+            <li><b>OBJ local</b> : vertices + normales + UV</li>
+            <li><b>3MF couleur</b> : ZIP avec colorgroup + vertex colors (depuis le HUD paint)</li>
+          </ul>
+          <p>Voir l'onglet <b>📦 Export</b> pour le détail.</p>
+        </div>
+
+        <h3>Tip : raccourcis clavier</h3>
+        <ul>
+          <li><code>Ctrl+K</code> : palette · <code>Ctrl+Enter</code> : générer · <code>Ctrl+Z</code> : annuler · <code>Ctrl+Shift+Z</code> : refaire</li>
+          <li><code>F</code> : mode focus · <code>R</code> : reset vue · <code>?</code> : guide · <code>Esc</code> : ferme HUDs</li>
+          <li><code>1</code>-<code>4</code> : modes Texte/Image/Multi/Hybride · <code>T</code>/<code>R</code> : backends Tripo/TRELLIS</li>
+        </ul>
       </div>
 
       <!-- ─── FAQ ─── -->

@@ -2858,18 +2858,25 @@ function mobTab(tab){
   document.querySelector('.R').classList.toggle('mob-on',tab==='infos');
   if(tab==='viewer'&&renderer){setTimeout(()=>{const c=q('cv');const p=c.parentElement;renderer.setSize(p.clientWidth,p.clientHeight);camera.aspect=p.clientWidth/p.clientHeight;camera.updateProjectionMatrix()},50)}
 }
-function initMob(){
-  if(window.innerWidth<=768){
+/* Tracking : seul un VRAI changement de breakpoint déclenche un reset
+   (sinon le scroll mobile shrink la barre URL -> resize -> reset au tab Config) */
+let _wasMobile=null;
+function initMob(force){
+  const isMob=window.innerWidth<=768;
+  if(!force&&_wasMobile===isMob)return; // déjà dans le bon mode, on ignore
+  _wasMobile=isMob;
+  if(isMob){
     document.querySelector('.L').classList.add('mob-on');
     document.querySelector('.C').classList.remove('mob-on');
     document.querySelector('.R').classList.remove('mob-on');
+    ['config','viewer','infos'].forEach(t=>{const el=q('mnav-'+t);if(el)el.classList.toggle('on',t==='config')});
   }else{
     document.querySelector('.L').classList.remove('mob-on');
     document.querySelector('.C').classList.remove('mob-on');
     document.querySelector('.R').classList.remove('mob-on');
   }
 }
-window.addEventListener('resize',initMob);
+window.addEventListener('resize',()=>initMob(false));
 
 /* ── TOUCH EVENTS 3D VIEWER ── */
 function initTouch(){
@@ -3158,7 +3165,7 @@ async function generateTrellis(){
 window.addEventListener('load',()=>{
   init3();
   initTouch();
-  initMob();
+  initMob(true);
   initGlobalDrop();
   initMatGrid();
   renderLightPanel();
