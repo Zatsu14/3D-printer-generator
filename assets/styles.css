@@ -112,24 +112,27 @@ body.focus-mode .C{grid-column:1}
 .vtb{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--b2);flex-shrink:0}
 .vtb-r{display:flex;gap:4px}
 .ib{width:30px;height:30px;border-radius:7px;border:1px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:all .15s;font-family:var(--mono);font-size:11px;position:relative}
-/* Label devient un tooltip qui apparait au hover sous le bouton */
-.ib-lbl{
-  position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(-4px);
-  padding:4px 9px;border-radius:7px;
-  background:rgba(8,8,12,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+/* Le span .ib-lbl est cache dans le bouton, sert juste de source de texte pour le tooltip global */
+.ib-lbl{display:none}
+/* Tooltip global fixed pour ne pas etre clippe par overflow:hidden des panels */
+#tip-float{
+  position:fixed;
+  padding:5px 11px;border-radius:7px;
+  background:rgba(8,8,12,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border:1px solid var(--ac);
-  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;
   color:var(--ac);white-space:nowrap;
-  opacity:0;pointer-events:none;
+  pointer-events:none;
+  opacity:0;transform:translateX(-50%) translateY(-4px);
   transition:opacity .15s var(--ease),transform .15s var(--ease);
-  z-index:50;text-transform:uppercase;
-  box-shadow:0 4px 16px rgba(0,0,0,.4),0 0 16px rgba(158,255,58,.2);
+  z-index:9999;text-transform:uppercase;
+  box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 20px rgba(158,255,58,.25);
 }
-.ib-lbl::before{
+#tip-float.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#tip-float::before{
   content:"";position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
   border:5px solid transparent;border-bottom-color:var(--ac);
 }
-.ib:hover:not(:disabled) .ib-lbl{opacity:1;transform:translateX(-50%) translateY(0)}
 .ib:hover:not(:disabled){border-color:var(--b3);color:var(--t);background:var(--bg3)}
 .ib:disabled{opacity:.3;cursor:not-allowed}
 .ib.on{color:var(--ac);border-color:var(--ac)}

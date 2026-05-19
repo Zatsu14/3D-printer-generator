@@ -3162,8 +3162,43 @@ async function generateTrellis(){
   }
 }
 
+/* ══════════════════════════════════════════════
+   TOOLTIP GLOBAL — un seul element fixe pour tous les boutons .ib
+   ══════════════════════════════════════════════ */
+function initFloatingTooltip(){
+  let tip=q('tip-float');
+  if(!tip){tip=document.createElement('div');tip.id='tip-float';document.body.appendChild(tip)}
+  let raf=null;
+  function show(btn){
+    if(btn.disabled)return;
+    const lbl=btn.querySelector('.ib-lbl');
+    const txt=lbl?lbl.textContent:btn.getAttribute('aria-label')||btn.getAttribute('title');
+    if(!txt)return;
+    tip.textContent=txt;
+    // Repositionner
+    const r=btn.getBoundingClientRect();
+    tip.style.left=(r.left+r.width/2)+'px';
+    tip.style.top=(r.bottom+8)+'px';
+    cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(()=>tip.classList.add('on'));
+  }
+  function hide(){cancelAnimationFrame(raf);tip.classList.remove('on')}
+  // Delegation : sur toute la page
+  document.addEventListener('mouseover',e=>{const btn=e.target.closest?.('.ib');if(btn)show(btn)});
+  document.addEventListener('mouseout',e=>{const btn=e.target.closest?.('.ib');if(btn)hide()});
+  document.addEventListener('mousedown',hide); // cache au clic
+  window.addEventListener('scroll',hide,true);
+  window.addEventListener('blur',hide);
+  // Retire les title natifs pour ne pas avoir 2 tooltips qui s'affichent
+  document.querySelectorAll('.ib[title]').forEach(b=>{
+    if(!b.getAttribute('aria-label'))b.setAttribute('aria-label',b.title);
+    b.removeAttribute('title');
+  });
+}
+
 window.addEventListener('load',()=>{
   init3();
+  initFloatingTooltip();
   initTouch();
   initMob(true);
   initGlobalDrop();
