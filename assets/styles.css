@@ -111,13 +111,29 @@ body.focus-mode .C{grid-column:1}
 .C{background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
 .vtb{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--b2);flex-shrink:0}
 .vtb-r{display:flex;gap:4px}
-.ib{min-width:44px;height:40px;padding:3px 4px;border-radius:7px;border:1px solid var(--b2);background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--t2);transition:all .15s;font-family:var(--mono);font-size:11px}
-.ib-lbl{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.04em;color:inherit;opacity:.85;line-height:1;text-transform:uppercase;white-space:nowrap}
+.ib{width:30px;height:30px;border-radius:7px;border:1px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:all .15s;font-family:var(--mono);font-size:11px;position:relative}
+/* Label devient un tooltip qui apparait au hover sous le bouton */
+.ib-lbl{
+  position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(-4px);
+  padding:4px 9px;border-radius:7px;
+  background:rgba(8,8,12,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--ac);
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;
+  color:var(--ac);white-space:nowrap;
+  opacity:0;pointer-events:none;
+  transition:opacity .15s var(--ease),transform .15s var(--ease);
+  z-index:50;text-transform:uppercase;
+  box-shadow:0 4px 16px rgba(0,0,0,.4),0 0 16px rgba(158,255,58,.2);
+}
+.ib-lbl::before{
+  content:"";position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-bottom-color:var(--ac);
+}
+.ib:hover:not(:disabled) .ib-lbl{opacity:1;transform:translateX(-50%) translateY(0)}
 .ib:hover:not(:disabled){border-color:var(--b3);color:var(--t);background:var(--bg3)}
-.ib:hover:not(:disabled) .ib-lbl{opacity:1}
 .ib:disabled{opacity:.3;cursor:not-allowed}
 .ib.on{color:var(--ac);border-color:var(--ac)}
-.ib.w{min-width:auto;padding:0 10px;font-size:12px;font-weight:700;flex-direction:row}
+.ib.w{width:auto;padding:0 10px;font-size:12px;font-weight:700}
 .vw{flex:1;position:relative;overflow:hidden}
 .emp{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;pointer-events:none}
 .eb{width:60px;height:60px;border:1.5px solid var(--b2);border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--bg2)}
@@ -628,7 +644,7 @@ body::before{
 /* ══════════════════════════════════════════════
    TOOLBAR — sep + boutons orient/measure/section
    ══════════════════════════════════════════════ */
-.ib-sep{width:1px;height:26px;background:var(--b2);margin:0 4px;align-self:center}
+.ib-sep{width:1px;height:18px;background:var(--b2);margin:0 2px;align-self:center}
 .ib:not(:disabled).on{background:linear-gradient(135deg,var(--ac3),transparent);border-color:var(--ac);color:var(--ac);box-shadow:0 0 12px rgba(158,255,58,.3)}
 #b-import{color:var(--neon);border-color:rgba(79,255,213,.3)}
 #b-import:hover{background:var(--neon2);box-shadow:0 0 16px rgba(79,255,213,.3)}
@@ -1041,9 +1057,9 @@ body.l-tab-api .sec:not([data-cat="api"]){display:none}
   /* ── Viewer bar ── */
   .hb{font-size:10px;padding:3px 10px;bottom:68px}
   .vtb{padding:6px 10px;flex-wrap:wrap;gap:6px}
-  .ib{min-width:32px;height:32px;padding:0}
+  .ib{width:32px;height:32px}
   .ib-lbl{display:none}
-  .ib.w{padding:0 8px;font-size:11px;min-width:auto}
+  .ib.w{padding:0 8px;font-size:11px;width:auto}
   .scale-wrap input[type=range]{width:60px}
 
   /* ── Right panel ── */
