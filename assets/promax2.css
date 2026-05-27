@@ -1,0 +1,183 @@
+/* ══════════════════════════════════════════════
+   PRO MAX UI v2 — Polish (states / status / particles / transitions / cursor / a11y)
+   ══════════════════════════════════════════════ */
+
+/* ── EMPTY STATES ANIMÉS ── */
+.es-anim{padding:30px 18px;text-align:center;color:var(--t2)}
+.es-anim-ico{
+  width:64px;height:64px;margin:0 auto 16px;
+  position:relative;
+  color:var(--ac);
+}
+.es-anim-ico svg{width:100%;height:100%;filter:drop-shadow(0 0 16px rgba(158,255,58,.5))}
+.es-anim-ico::before{
+  content:"";position:absolute;inset:-8px;
+  border:1.5px solid var(--ac);border-radius:50%;
+  opacity:.3;animation:es-ring 2.4s var(--ease-out) infinite;
+}
+.es-anim-ico::after{
+  content:"";position:absolute;inset:-8px;
+  border:1.5px solid var(--ac);border-radius:50%;
+  opacity:.3;animation:es-ring 2.4s var(--ease-out) infinite 1.2s;
+}
+@keyframes es-ring{
+  0%{transform:scale(.7);opacity:.7}
+  100%{transform:scale(1.5);opacity:0}
+}
+.es-anim h4{font-size:15px;color:var(--t);margin-bottom:8px;font-weight:700;letter-spacing:.02em}
+.es-anim p{font-family:var(--mono);font-size:11.5px;color:var(--t2);line-height:1.7;margin-bottom:16px}
+.es-anim .es-cta{
+  padding:9px 18px;border-radius:9px;
+  border:1.5px solid var(--ac);background:var(--ac3);color:var(--ac);
+  font-family:var(--dis);font-size:12px;font-weight:700;cursor:pointer;
+  transition:all .2s var(--ease);
+}
+.es-anim .es-cta:hover{background:var(--ac);color:#0a0a0a;box-shadow:0 0 20px var(--ac);transform:translateY(-1px)}
+
+/* ── STATUS BAR BOTTOM ── */
+.status-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  height:24px;
+  background:rgba(8,8,12,.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--b2);
+  display:flex;align-items:center;gap:18px;
+  padding:0 14px;
+  font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.04em;
+  z-index:30;
+  text-transform:uppercase;font-weight:700;
+}
+.status-bar::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--ac),transparent);opacity:.4;
+}
+.status-item{display:flex;align-items:center;gap:5px}
+.status-item-ico{color:var(--ac);font-size:9px;text-shadow:0 0 4px var(--ac)}
+.status-item .v{color:var(--t)}
+.status-item.right{margin-left:auto}
+.status-item.warn .v{color:var(--orange)}
+.status-item.err .v{color:var(--red)}
+.status-sep{width:1px;height:12px;background:var(--b2)}
+.status-fps-dot{width:6px;height:6px;border-radius:50%;background:var(--ac);box-shadow:0 0 4px var(--ac)}
+.status-fps-dot.med{background:var(--orange);box-shadow:0 0 4px var(--orange)}
+.status-fps-dot.low{background:var(--red);box-shadow:0 0 4px var(--red)}
+
+/* Adjust app padding pour la status bar */
+.app{padding-bottom:24px}
+@media(max-width:768px){
+  .app{padding-bottom:80px} /* mob-nav + status-bar */
+  .status-bar{bottom:56px;font-size:9px;gap:12px;padding:0 10px}
+  .status-item.hide-mob{display:none}
+}
+
+/* ── PARTICLES BACKGROUND ── */
+.particles-bg{
+  position:fixed;inset:0;
+  pointer-events:none;z-index:0;
+  overflow:hidden;
+}
+.particle{
+  position:absolute;
+  width:2px;height:2px;border-radius:50%;
+  background:var(--ac);
+  box-shadow:0 0 6px var(--ac);
+  opacity:.35;
+  will-change:transform;
+}
+body.reduce-motion .particle,
+body.no-particles .particle{display:none}
+body.no-particles .particles-bg{display:none}
+
+/* ── TRANSITIONS PANELS ── */
+@keyframes pane-fade-in{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.pane.on{animation:pane-fade-in .3s var(--ease-out)}
+.r-pane.on{animation:pane-fade-in .3s var(--ease-out)}
+.guide-pane.on{animation:pane-fade-in .25s var(--ease-out)}
+body.reduce-motion .pane.on,
+body.reduce-motion .r-pane.on,
+body.reduce-motion .guide-pane.on{animation:none}
+
+/* Indicator coulissant sous les tabs (style Material) */
+.r-tabs{position:relative}
+.r-tabs::after{
+  content:"";position:absolute;bottom:-1px;height:2.5px;
+  background:var(--ac);border-radius:2px;
+  box-shadow:0 0 10px var(--ac);
+  width:var(--rt-w,60px);left:var(--rt-x,0);
+  transition:left .3s var(--ease-out),width .3s var(--ease-out);
+}
+.r-tab.on{border-bottom-color:transparent!important}
+
+/* ── CUSTOM CURSOR (paint / eyedrop) ── */
+.paint-cursor{
+  position:fixed;
+  width:30px;height:30px;
+  border-radius:50%;
+  border:2px solid var(--ac);
+  box-shadow:0 0 14px rgba(158,255,58,.6),inset 0 0 14px rgba(158,255,58,.2);
+  pointer-events:none;
+  z-index:300;
+  transform:translate(-50%,-50%);
+  display:none;
+  transition:width .15s var(--ease),height .15s var(--ease),background .15s;
+}
+.paint-cursor.on{display:block}
+.paint-cursor.eyedrop{
+  border-color:var(--neon);
+  box-shadow:0 0 14px var(--neon),inset 0 0 14px rgba(79,255,213,.2);
+  width:24px;height:24px;
+}
+.paint-cursor.eyedrop::before{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:4px;height:4px;border-radius:50%;background:var(--neon);
+  box-shadow:0 0 4px var(--neon);
+}
+.paint-cursor.fill{
+  border-color:var(--orange);
+  box-shadow:0 0 14px var(--orange);
+  width:34px;height:34px;
+}
+.paint-cursor.fill::before{
+  content:"🪣";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-size:14px;filter:drop-shadow(0 0 4px var(--orange));
+}
+/* Hide native cursor when paint cursor active */
+.paint-cursor-active #cv{cursor:none!important}
+
+/* ── A11Y : Focus rings ── */
+:focus-visible{
+  outline:2px solid var(--ac);
+  outline-offset:2px;
+  border-radius:6px;
+  box-shadow:0 0 0 4px var(--ac3);
+}
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible{
+  outline:2px solid var(--ac);
+  outline-offset:2px;
+}
+/* Réduit l'effet sur les boutons déjà colorés */
+.gb:focus-visible,.gb-stop:focus-visible{outline-offset:3px}
+
+/* prefers-reduced-motion : respecte la pref OS */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+  .particle,.es-anim-ico::before,.es-anim-ico::after{display:none}
+}
+
+/* ── ARIA LIVE region (visuellement cachée mais accessible) ── */
+.sr-only{
+  position:absolute!important;
+  width:1px;height:1px;
+  padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
