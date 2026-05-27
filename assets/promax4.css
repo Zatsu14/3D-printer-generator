@@ -1,0 +1,150 @@
+/* ══════════════════════════════════════════════
+   PRO MAX UI v2 PR-B — Interactions naturelles
+   FAB mobile / Swipe / Snap / Drag reorder / HUD drag / Smart tips
+   ══════════════════════════════════════════════ */
+
+/* ── FAB MOBILE (Floating Action Button) ── */
+.fab{
+  display:none;
+  position:fixed;bottom:78px;right:18px;z-index:35;
+  width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--ac),var(--neon));
+  border:none;cursor:pointer;color:#0a0a0a;
+  box-shadow:0 6px 24px rgba(158,255,58,.45),0 0 0 1px rgba(255,255,255,.15) inset;
+  align-items:center;justify-content:center;
+  transition:all .25s var(--ease-bounce);
+}
+.fab svg{width:24px;height:24px}
+.fab:active{transform:scale(.92)}
+.fab.on{transform:rotate(45deg)}
+@media(max-width:768px){.fab{display:flex}}
+
+.fab-radial{
+  position:fixed;bottom:78px;right:18px;z-index:34;
+  pointer-events:none;
+}
+.fab-action{
+  position:absolute;bottom:0;right:0;
+  width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(180deg,rgba(28,28,40,.95),rgba(15,15,24,.95));
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1.5px solid var(--ac);color:var(--ac);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;cursor:pointer;
+  opacity:0;transform:scale(.5);
+  transition:all .25s var(--ease-bounce);
+  pointer-events:auto;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);
+}
+.fab-radial.on .fab-action{opacity:1}
+.fab-radial.on .fab-action:nth-child(1){transform:translate(0,-66px) scale(1)}
+.fab-radial.on .fab-action:nth-child(2){transform:translate(-48px,-48px) scale(1)}
+.fab-radial.on .fab-action:nth-child(3){transform:translate(-66px,0) scale(1)}
+.fab-radial.on .fab-action:nth-child(4){transform:translate(-50px,-90px) scale(1)}
+.fab-action-lbl{
+  position:absolute;right:54px;top:50%;transform:translateY(-50%);
+  white-space:nowrap;padding:3px 8px;border-radius:6px;
+  background:rgba(8,8,12,.9);font-family:var(--mono);font-size:10px;color:var(--ac);
+  border:1px solid var(--ac);text-transform:uppercase;letter-spacing:.04em;
+  opacity:0;transition:opacity .15s var(--ease);
+}
+.fab-radial.on .fab-action:hover .fab-action-lbl{opacity:1}
+
+/* ── SWIPE INDICATOR (mobile) ── */
+@media(max-width:768px){
+  .swipe-hint{
+    position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
+    padding:5px 11px;border-radius:100px;
+    background:rgba(8,8,12,.85);backdrop-filter:blur(10px);
+    border:1px solid var(--b2);
+    font-family:var(--mono);font-size:9px;color:var(--t3);
+    z-index:30;letter-spacing:.06em;text-transform:uppercase;
+    pointer-events:none;opacity:0;transition:opacity .3s var(--ease);
+  }
+  .swipe-hint.show{opacity:.85}
+}
+
+/* ── DRAG REORDER ── */
+.hi[draggable=true]{cursor:grab}
+.hi[draggable=true]:active{cursor:grabbing}
+.hi.dragging{opacity:.4;transform:rotate(-1deg)}
+.hi.drag-over{
+  border-top:3px solid var(--ac);
+  margin-top:-1.5px;
+}
+.hi.drag-over-bottom{
+  border-bottom:3px solid var(--ac);
+  margin-bottom:-1.5px;
+}
+
+/* ── HUD DRAGGABLE ── */
+.meas-hud,.sec-hud,.light-hud,.hollow-hud,.paint-hud,.base-hud{
+  resize:none;
+  user-select:none;
+}
+.meas-head{cursor:grab}
+.meas-head:active{cursor:grabbing}
+.hud-dragging{
+  opacity:.9;
+  box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 36px rgba(158,255,58,.4)!important;
+  transition:none!important;
+}
+.hud-grip{
+  display:inline-block;margin-right:4px;color:var(--t3);font-size:11px;letter-spacing:-2px;
+}
+.hud-grip::before{content:"⋮⋮"}
+
+/* ── SMART SUGGESTIONS ── */
+.smart-tip{
+  position:fixed;bottom:42px;left:50%;transform:translateX(-50%) translateY(20px);
+  z-index:40;
+  padding:11px 18px;padding-right:42px;border-radius:11px;
+  background:linear-gradient(135deg,rgba(176,110,243,.95),rgba(176,110,243,.85));
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.2);
+  box-shadow:0 8px 28px rgba(176,110,243,.4),0 0 32px rgba(176,110,243,.25);
+  color:#fff;
+  font-size:13px;font-weight:500;
+  max-width:480px;
+  display:flex;align-items:center;gap:10px;
+  opacity:0;pointer-events:none;
+  transition:all .35s var(--ease-out);
+}
+.smart-tip.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.smart-tip-ico{font-size:18px;flex-shrink:0}
+.smart-tip-cta{
+  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--dis);
+  font-size:11px;font-weight:700;color:#fff;
+  transition:all .15s var(--ease);
+}
+.smart-tip-cta:hover{background:rgba(255,255,255,.3)}
+.smart-tip-close{
+  position:absolute;top:6px;right:8px;
+  width:22px;height:22px;border-radius:5px;
+  background:rgba(0,0,0,.2);border:none;color:#fff;
+  cursor:pointer;font-size:14px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.smart-tip-close:hover{background:rgba(0,0,0,.4)}
+
+@media(max-width:768px){
+  .smart-tip{bottom:96px;max-width:calc(100vw - 24px);font-size:12px;padding:10px 14px;padding-right:36px}
+}
+
+/* ── MAGNETIC SNAP visuel sur sliders ── */
+.snap-mark{
+  position:relative;
+}
+.snap-mark::after{
+  content:"";position:absolute;top:50%;transform:translateY(-50%);
+  width:2px;height:8px;background:var(--ac);opacity:.4;border-radius:1px;
+  pointer-events:none;
+}
+.scale-wrap{position:relative}
+.scale-wrap .snap-tick{
+  position:absolute;
+  top:50%;transform:translate(-50%,-50%);
+  width:2px;height:8px;background:var(--ac);opacity:.5;border-radius:1px;
+  pointer-events:none;z-index:1;
+}
