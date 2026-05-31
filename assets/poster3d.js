@@ -246,9 +246,10 @@ async function generatePoster(){
   try{
     const mesh3d=await _buildPosterMesh();
     if(!mesh3d){toast('Échec génération',true);return}
-    if(!window.scene)init3();
-    if(window.mesh){scene.remove(window.mesh);window.mesh=null}
-    window.mesh=mesh3d;
+    if(typeof scene==='undefined'||!scene)init3();
+    if(typeof mesh!=='undefined'&&mesh){scene.remove(mesh)}
+    // Affecte le mesh global d'app.js (var-declared maintenant, partage entre scripts)
+    mesh=mesh3d;
     scene.add(mesh3d);
     finM();
     // UI

@@ -275,15 +275,15 @@ function toggleSpecSec(headerEl){
 const PROXY='https://form-3d-proxy.antho14j.workers.dev/proxy';
 const HIST_KEY='form3d_hist_v2';
 
-let mode='text',quality='hd';
-let imgs={1:[],2:[],3:[]};
-let curId=null,poll=null,mUrls={},ppTaskId=null;
-let scene,camera,renderer,mesh,wire=false,col=true;
+var mode='text',quality='hd';
+var imgs={1:[],2:[],3:[]};
+var curId=null,poll=null,mUrls={},ppTaskId=null;
+var scene,camera,renderer,mesh,wire=false,col=true; // var pour partage cross-script (poster3d.js etc)
 let drag=false,mbtn=-1,lx=0,ly=0,rx=0,ry=0,dist=4,panX=0,panY=0;
 let hist=[];
 let selectedAnims=new Set(['preset:idle','preset:walk']);
 let currentSpecs=null;
-let currentMat='PLA',matPrice=25,modelScale=1;
+var currentMat='PLA',matPrice=25,modelScale=1;
 let origUrl=null,origThumb=null,compareMode=false;
 let batchN=1,batchResults=[];
 let genStartTime=0;
@@ -319,7 +319,7 @@ let baseGroup=null; // socle eventuel (THREE.Group ajoute au mesh)
 let baseConfig={type:'disc',thicknessMm:3,diameterMm:0,marginPct:20}; // diameterMm=0 -> auto
 
 /* ── TRELLIS ── */
-let backend='tripo'; // 'tripo'|'trellis'
+var backend='tripo'; // 'tripo'|'trellis'
 let trellisOk=false;
 let trellisRes=1024;      // 512 | 1024 | 1536
 let trellisSsSteps=20;    // ss_sampling_steps (1-50) — structure sparse
