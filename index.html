@@ -21,6 +21,7 @@
     <div class="bk-sel">
       <button class="bk-btn on" id="bk-tripo" onclick="setBackend('tripo')">☁ Tripo3D</button>
       <button class="bk-btn trl" id="bk-trellis" onclick="setBackend('trellis')"><span class="bk-dot" id="bk-dot"></span>TRELLIS Local</button>
+      <button class="bk-btn bk-poster" onclick="openPosterModal()" title="Créer un poster 3D depuis une image (lithophane / bas-relief)">🖼 Poster 3D</button>
     </div>
     <button class="kbd-btn" onclick="openCmdPalette()" title="Palette de commandes (Ctrl+K)" aria-label="Ouvrir la palette de commandes">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -1160,6 +1161,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/poster3d.js"></script>
 <script src="assets/promax.js"></script>
 <script src="assets/promax2.js"></script>
 <script src="assets/promax3.js"></script>
