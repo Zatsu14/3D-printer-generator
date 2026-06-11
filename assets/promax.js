@@ -254,18 +254,16 @@ function _playSound(type){
   }catch(e){}
 }
 
-/* ── INIT ── */
+/* ── INIT — etapes isolees ── */
 window.addEventListener('load',()=>{
-  initTheme();
-  loadNotifs();
-  hookToast();
-  // Restore prefs
-  if(localStorage.getItem('form3d_sounds')==='1')window._soundsOn=true;
-  if(localStorage.getItem('form3d_anim')==='0')document.body.classList.add('reduce-motion');
+  [initTheme,loadNotifs,hookToast,()=>{
+    if(localStorage.getItem('form3d_sounds')==='1')window._soundsOn=true;
+    if(localStorage.getItem('form3d_anim')==='0')document.body.classList.add('reduce-motion');
+  }].forEach(fn=>{try{fn()}catch(e){console.warn('promax init:',e)}});
   // Hook setG apres que app.js soit charge
   setTimeout(hookSetG,100);
   // Welcome tour
   setTimeout(()=>{
-    if(localStorage.getItem('form3d_tour_done')!=='1'&&!localStorage.getItem('form3d_hist_v2'))startWelcomeTour();
+    try{if(localStorage.getItem('form3d_tour_done')!=='1'&&!localStorage.getItem('form3d_hist_v2'))startWelcomeTour()}catch(e){}
   },800);
 });

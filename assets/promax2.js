@@ -193,34 +193,24 @@ function hookToastA11y(){
   window._a11yHooked=true;
 }
 
-/* ── INIT ── */
+/* ── INIT — etapes isolees ── */
 window.addEventListener('load',()=>{
-  // Status bar
-  buildStatusBar();
-  setInterval(updateStatusBar,500);
-  statusBarTick();
-
-  // Particles (si activé)
-  const particlesOn=localStorage.getItem('form3d_particles')!=='0';
-  if(particlesOn)buildParticles();
-  else document.body.classList.add('no-particles');
-
-  // Empty states animés
-  decorateEmptyStates();
-  setInterval(decorateEmptyStates,2000); // re-decorate au cas où
-
-  // R-tabs indicator
-  updateRTabsIndicator();
-  document.querySelectorAll('.r-tab').forEach(t=>t.addEventListener('click',()=>setTimeout(updateRTabsIndicator,10)));
-  window.addEventListener('resize',updateRTabsIndicator);
-
-  // Custom cursor
-  ensurePaintCursor();
-  document.addEventListener('mousemove',updatePaintCursor);
-
-  // A11y
-  buildAriaLive();
-  setTimeout(hookToastA11y,150);
+  [
+    ()=>{buildStatusBar();setInterval(updateStatusBar,500);statusBarTick()},
+    ()=>{
+      const particlesOn=localStorage.getItem('form3d_particles')!=='0';
+      if(particlesOn)buildParticles();
+      else document.body.classList.add('no-particles');
+    },
+    ()=>{decorateEmptyStates();setInterval(decorateEmptyStates,2000)},
+    ()=>{
+      updateRTabsIndicator();
+      document.querySelectorAll('.r-tab').forEach(t=>t.addEventListener('click',()=>setTimeout(updateRTabsIndicator,10)));
+      window.addEventListener('resize',updateRTabsIndicator);
+    },
+    ()=>{ensurePaintCursor();document.addEventListener('mousemove',updatePaintCursor)},
+    ()=>{buildAriaLive();setTimeout(hookToastA11y,150)},
+  ].forEach(fn=>{try{fn()}catch(e){console.warn('promax2 init:',e)}});
 });
 
 /* ── Toggle particles dans Settings (ajoute la row) ── */

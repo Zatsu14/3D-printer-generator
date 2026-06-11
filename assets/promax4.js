@@ -148,11 +148,11 @@ function initDragReorder(){
       if(el.dataset.dragInit)return;
       el.dataset.dragInit='1';
       el.draggable=true;
-      let dragIdx=-1;
+      // Index absolu dans le tableau hist via onclick="selH(N)" (l'index DOM ment si filtre actif)
+      const histIdxOf=node=>{const m=(node.getAttribute('onclick')||'').match(/selH\((\d+)\)/);return m?+m[1]:Array.from(hist.children).indexOf(node)};
       el.addEventListener('dragstart',e=>{
-        dragIdx=Array.from(hist.children).indexOf(el);
         e.dataTransfer.effectAllowed='move';
-        e.dataTransfer.setData('text/plain',String(dragIdx));
+        e.dataTransfer.setData('text/plain',String(histIdxOf(el)));
         el.classList.add('dragging');
       });
       el.addEventListener('dragend',()=>{
@@ -169,11 +169,10 @@ function initDragReorder(){
       el.addEventListener('drop',e=>{
         e.preventDefault();
         const fromIdx=+e.dataTransfer.getData('text/plain');
-        const toEl=el;
-        const r=toEl.getBoundingClientRect();const bottom=e.clientY>r.top+r.height/2;
-        let toIdx=Array.from(hist.children).indexOf(toEl);
+        const r=el.getBoundingClientRect();const bottom=e.clientY>r.top+r.height/2;
+        let toIdx=histIdxOf(el);
         if(bottom)toIdx++;
-        if(window.hist&&Array.isArray(window.hist)&&fromIdx>=0&&fromIdx<window.hist.length){
+        if(Array.isArray(window.hist)&&fromIdx>=0&&fromIdx<window.hist.length){
           const moved=window.hist.splice(fromIdx,1)[0];
           if(toIdx>fromIdx)toIdx--;
           window.hist.splice(toIdx,0,moved);
@@ -325,13 +324,8 @@ function buildSmartTip(){
    ══════════════════════════════════════════════ */
 window.addEventListener('load',()=>{
   setTimeout(()=>{
-    buildFAB();
-    initSwipeGestures();
-    initSnapSliders();
-    initDragReorder();
-    initHudDrag();
-    buildSmartTip();
-    // Smart tips polling
-    setInterval(checkSmartTips,3000);
+    [buildFAB,initSwipeGestures,initSnapSliders,initDragReorder,initHudDrag,buildSmartTip,
+     ()=>setInterval(checkSmartTips,3000)]
+      .forEach(fn=>{try{fn()}catch(e){console.warn('promax4 init:',e)}});
   },300);
 });
