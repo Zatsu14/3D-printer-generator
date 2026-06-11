@@ -44,7 +44,7 @@ function clearChipFilters(){
 
 function togglePin(idx,evt){
   evt?.stopPropagation();
-  if(!window.hist||!hist[idx])return;
+  if(!Array.isArray(hist)||!hist[idx])return;
   hist[idx].pinned=!hist[idx].pinned;
   if(typeof saveHist==='function')saveHist();
   if(typeof rH==='function')rH();
@@ -54,48 +54,42 @@ function togglePin(idx,evt){
 (function(){
   if(typeof rH!=='function')return;
   const origRH=window.rH;
+  /* Verifie si un item passe le filtre chips actif */
+  function _passesChips(h){
+    if(_histChipFilters.size===0)return true;
+    for(const f of _histChipFilters){
+      if(['text','image','multiview','hybrid','import'].includes(f)&&h.mode===f)return true;
+      if(f==='turbo'&&h.quality==='turbo')return true;
+      if(f==='hd'&&h.quality==='hd')return true;
+      if(f==='trellis'&&h.quality==='trellis')return true;
+      if(f==='pinned'&&h.pinned)return true;
+    }
+    return false;
+  }
   window.rH=function(){
-    // Sort : pinned en haut
-    if(window.hist&&Array.isArray(window.hist)){
-      window.hist.sort((a,b)=>{
+    // Sort : pinned en haut (stable, garde l'ordre relatif)
+    if(Array.isArray(hist)){
+      hist.sort((a,b)=>{
         if(a.pinned&&!b.pinned)return -1;
         if(!a.pinned&&b.pinned)return 1;
         return 0;
       });
     }
-    // Filtre supplementaire par chips
-    let savedFilter=window.histFilter||'';
-    if(_histChipFilters.size>0){
-      // Hack : on filtre le hist temporairement
-      const origHist=window.hist;
-      window.hist=origHist.filter(h=>{
-        for(const f of _histChipFilters){
-          if(['text','image','multiview','hybrid','import'].includes(f)&&h.mode===f)return true;
-          if(f==='turbo'&&h.quality==='turbo')return true;
-          if(f==='hd'&&h.quality==='hd')return true;
-          if(f==='trellis'&&h.quality==='trellis')return true;
-          if(f==='pinned'&&h.pinned)return true;
-        }
-        return false;
-      });
-      try{origRH()}finally{window.hist=origHist}
-    }else{
-      origRH();
-    }
+    origRH();
     // Applique data-view
     const el=document.getElementById('hist');if(el){el.dataset.view=_histView}
-    // Injecte les boutons pin sur chaque item
-    document.querySelectorAll('.hi').forEach((it,i)=>{
+    // Post-render : filtre chips (display:none, les indices selH restent corrects) + pins
+    document.querySelectorAll('.hi').forEach(it=>{
+      // Index absolu robuste : extrait depuis l'attribut onclick="selH(N)" genere par rH
+      const m=(it.getAttribute('onclick')||'').match(/selH\((\d+)\)/);
+      const idx=m?+m[1]:-1;
+      const h=idx>=0?hist[idx]:null;
+      if(h&&!_passesChips(h)){it.style.display='none';return}
       if(it.querySelector('.hi-pin'))return;
-      const realIdx=Array.from(it.parentElement.children).indexOf(it);
-      const idx=(window.hist||[]).findIndex(h=>{
-        const txt=it.querySelector('.hip')?.textContent||'';
-        return h.prompt?.startsWith(txt.replace(/…$/,''));
-      });
-      const pinned=idx>=0&&hist[idx]?.pinned;
       const pin=document.createElement('button');
-      pin.className='hi-pin'+(pinned?' on':'');
+      pin.className='hi-pin'+(h?.pinned?' on':'');
       pin.title='Épingler';
+      pin.setAttribute('aria-label','Épingler ce modèle');
       pin.innerHTML='⭐';
       pin.onclick=(e)=>togglePin(idx,e);
       it.appendChild(pin);
@@ -261,7 +255,9 @@ function initCtxMenus(){
     const hi=e.target.closest?.('.hi');
     if(hi){
       e.preventDefault();
-      const idx=Array.from(hi.parentElement.children).indexOf(hi);
+      // Index absolu depuis l'attribut onclick="selH(N)" (l'index DOM est faux si filtre actif)
+      const _m=(hi.getAttribute('onclick')||'').match(/selH\((\d+)\)/);
+      const idx=_m?+_m[1]:Array.from(hi.parentElement.children).indexOf(hi);
       showCtxMenu([
         {header:'Modèle dans l\'historique'},
         {ico:'📂',label:'Recharger',action:()=>{if(typeof selH==='function')selH(idx)}},
@@ -270,9 +266,9 @@ function initCtxMenus(){
         'sep',
         {ico:'🗑',label:'Supprimer',danger:true,action:()=>{
           if(!confirm('Supprimer ce modèle de l\'historique ?'))return;
-          if(window.hist){
-            const h=window.hist[idx];
-            window.hist.splice(idx,1);
+          if(Array.isArray(hist)){
+            const h=hist[idx];
+            hist.splice(idx,1);
             if(h?.id&&typeof idbDel==='function')idbDel(h.id);
             if(typeof saveHist==='function')saveHist();
             if(typeof rH==='function')rH();
@@ -328,13 +324,10 @@ function setFaviconState(state){
   },250);
 })();
 
-/* ── INIT ── */
+/* ── INIT — chaque etape isolee pour eviter qu'une exception tue les suivantes ── */
 window.addEventListener('load',()=>{
   setTimeout(()=>{
-    injectHistToolbar();
-    setHistView(_histView);
-    initGizmo();
-    initCtxMenus();
-    setFaviconState('idle');
+    [injectHistToolbar,()=>setHistView(_histView),initGizmo,initCtxMenus,()=>setFaviconState('idle')]
+      .forEach(fn=>{try{fn()}catch(e){console.warn('promax3 init:',e)}});
   },200);
 });

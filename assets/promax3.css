@@ -159,3 +159,93 @@ body{transition:background-color .5s var(--ease-out)}
   .gizmo-mini{width:60px;height:60px;bottom:8px;right:8px}
   .ctx-menu{min-width:160px;font-size:12px}
 }
+
+/* ══════════════════════════════════════════════
+   MODERN POLISH — vignette viewer / entree page / micro-details
+   ══════════════════════════════════════════════ */
+
+/* Vignette cinematique sur le viewer 3D */
+.vw::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:radial-gradient(ellipse 85% 85% at 50% 45%,transparent 60%,rgba(0,0,0,.35) 100%);
+}
+
+/* Entree de page douce au chargement */
+@keyframes page-enter{from{opacity:0}to{opacity:1}}
+.app{animation:page-enter .5s var(--ease-out)}
+body.reduce-motion .app{animation:none}
+
+/* Le bouton Generer respire quand idle (pret a l'action) */
+@keyframes gb-breathe{
+  0%,100%{box-shadow:0 4px 24px rgba(158,255,58,.35)}
+  50%{box-shadow:0 4px 32px rgba(158,255,58,.55)}
+}
+.gb:not(:disabled):not(.ld){animation:gb-breathe 3.2s ease-in-out infinite}
+body.reduce-motion .gb{animation:none}
+
+/* Selection de texte aux couleurs du theme */
+::selection{background:var(--ac2);color:var(--t)}
+
+/* Number inputs : retire les fleches moches */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+
+/* Range sliders coherents */
+input[type=range]{height:4px;border-radius:2px;background:var(--bg4);appearance:none;-webkit-appearance:none;outline:none}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--ac);cursor:pointer;
+  box-shadow:0 0 8px rgba(158,255,58,.5),0 1px 3px rgba(0,0,0,.4);
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease);
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);box-shadow:0 0 14px rgba(158,255,58,.7)}
+input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;border:none;
+  background:var(--ac);cursor:pointer;
+  box-shadow:0 0 8px rgba(158,255,58,.5);
+}
+
+/* Scrollbar globale fine et neon */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--ac3);box-shadow:inset 0 0 4px var(--ac)}
+
+/* Toasts : entree spring */
+@keyframes toast-spring{
+  0%{transform:translateX(-50%) translateY(60px) scale(.9)}
+  60%{transform:translateX(-50%) translateY(-4px) scale(1.01)}
+  100%{transform:translateX(-50%) translateY(0) scale(1)}
+}
+.toast.on{animation:toast-spring .4s var(--ease-out)}
+body.reduce-motion .toast.on{animation:none}
+
+/* Top bar buttons : alignement et tailles coherentes */
+.top-right{align-items:center}
+
+/* Generer : etat loading avec barre de progression interne */
+.gb.ld{position:relative;overflow:hidden}
+.gb.ld::after{
+  content:"";position:absolute;bottom:0;left:0;height:2px;width:30%;
+  background:linear-gradient(90deg,transparent,var(--ac),transparent);
+  animation:gb-loading 1.2s linear infinite;
+}
+@keyframes gb-loading{0%{left:-30%}100%{left:100%}}
+
+/* ── TOP BAR MOBILE : decongestionne ── */
+@media(max-width:768px){
+  .kbd-btn{display:none} /* palette inutile au tactile, dispo via FAB */
+  .bk-btn.bk-poster{font-size:9px;padding:4px 5px;margin-left:1px}
+  .notif-btn{width:28px;height:28px;border-radius:7px}
+  .notif-btn svg{width:12px;height:12px}
+  .help-btn{padding:4px 7px}
+  .top-right{gap:4px;overflow:hidden}
+  .credit-chip{display:none} /* visible dans Stats, pas critique en top bar mobile */
+}
+@media(max-width:768px){
+  .bk-sel{overflow-x:auto;scrollbar-width:none;max-width:46vw;flex-shrink:1}
+  .bk-sel::-webkit-scrollbar{display:none}
+  .bk-btn{font-size:9px;padding:4px 6px;flex-shrink:0}
+}

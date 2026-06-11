@@ -131,7 +131,7 @@ function _cmdKeyNav(e){
 /* ══════════════════════════════════════════════
    FOCUS MODE — cache panneaux gauche/droite
    ══════════════════════════════════════════════ */
-let focusMode=false;
+var focusMode=false;
 function toggleFocusMode(){
   focusMode=!focusMode;
   document.body.classList.toggle('focus-mode',focusMode);
@@ -241,7 +241,7 @@ function _initResizer(id,cssVar,left){
 /* ══════════════════════════════════════════════
    SEARCH HISTORY
    ══════════════════════════════════════════════ */
-let histFilter='';
+var histFilter='';
 function setHistFilter(v){histFilter=v.toLowerCase().trim();rH()}
 
 /* ══════════════════════════════════════════════
@@ -253,7 +253,7 @@ function setHistFilter(v){histFilter=v.toLowerCase().trim();rH()}
    ONGLETS PANNEAU GAUCHE
    Filtre les sections selon : Tout / Sujet / Style / API
    ══════════════════════════════════════════════ */
-let currentLeftTab='all';
+var currentLeftTab='all';
 function setLeftTab(t){
   currentLeftTab=t;
   document.querySelectorAll('.l-tab').forEach(el=>el.classList.toggle('on',el.dataset.lt===t));
@@ -279,16 +279,16 @@ var mode='text',quality='hd';
 var imgs={1:[],2:[],3:[]};
 var curId=null,poll=null,mUrls={},ppTaskId=null;
 var scene,camera,renderer,mesh,wire=false,col=true; // var pour partage cross-script (poster3d.js etc)
-let drag=false,mbtn=-1,lx=0,ly=0,rx=0,ry=0,dist=4,panX=0,panY=0;
-let hist=[];
-let selectedAnims=new Set(['preset:idle','preset:walk']);
-let currentSpecs=null;
+var drag=false,mbtn=-1,lx=0,ly=0,rx=0,ry=0,dist=4,panX=0,panY=0;
+var hist=[];
+var selectedAnims=new Set(['preset:idle','preset:walk']);
+var currentSpecs=null;
 var currentMat='PLA',matPrice=25,modelScale=1;
-let origUrl=null,origThumb=null,compareMode=false;
-let batchN=1,batchResults=[];
-let genStartTime=0;
+var origUrl=null,origThumb=null,compareMode=false;
+var batchN=1,batchResults=[];
+var genStartTime=0;
 const STATS_KEY='form3d_stats_v1';
-let stats={gens:0,creds:0,totalMs:0,t0:Date.now()};
+var stats={gens:0,creds:0,totalMs:0,t0:Date.now()};
 /* Matériaux : densité + presets températures Bambu */
 const MATS={
   PLA:    {density:1.24,label:'PLA',     nozzle:220,bed:65, speed:1.0, fanMin:80,fanMax:100,retract:0.8,zHop:0.4,supportInterface:'PLA Support', cooling:'Always on',  desc:'Polyvalent · idéal débutant'},
@@ -312,24 +312,24 @@ const PRINTERS={
   'A1':      {label:'A1',          plate:[256,256,256],speed:500, accel:10000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:100,hotendMax:300,enclosed:false,multicolor:4, brand:'Bambu Lab',profileName:'Bambu Lab A1 0.4 nozzle',desc:'AMS Lite 4 couleurs · CoreXY bedslinger'},
   'A1 mini': {label:'A1 mini',     plate:[180,180,180],speed:500, accel:10000,nozzleDef:0.4,nozzles:[0.2,0.4,0.6,0.8],bedMax:80, hotendMax:300,enclosed:false,multicolor:4, brand:'Bambu Lab',profileName:'Bambu Lab A1 mini 0.4 nozzle',desc:'Compact · idéal petits modèles'},
 };
-let selectedPrinter='X2D';
-let nozzleSize=0.4;
-let autoRotate=true;
-let baseGroup=null; // socle eventuel (THREE.Group ajoute au mesh)
-let baseConfig={type:'disc',thicknessMm:3,diameterMm:0,marginPct:20}; // diameterMm=0 -> auto
+var selectedPrinter='X2D';
+var nozzleSize=0.4;
+var autoRotate=true;
+var baseGroup=null; // socle eventuel (THREE.Group ajoute au mesh)
+var baseConfig={type:'disc',thicknessMm:3,diameterMm:0,marginPct:20}; // diameterMm=0 -> auto
 
 /* ── TRELLIS ── */
 var backend='tripo'; // 'tripo'|'trellis'
-let trellisOk=false;
-let trellisRes=1024;      // 512 | 1024 | 1536
-let trellisSsSteps=20;    // ss_sampling_steps (1-50) — structure sparse
-let trellisSlatSteps=20;  // slat_sampling_steps (1-50) — surface SLAT
-let trellisGuidance=7.5;  // guidance_scale (1-10)
-let trellisTexSize=2048;  // texture_size (512/1024/2048/4096)
-let trellisFaceLimit=50;  // mesh_simplify int (5-100), ×1000 = faces
-let trellisPoll=null;
-let trellisAbortCtrl=null;
-let histSelIdx=-1;        // index de l'item historique sélectionné
+var trellisOk=false;
+var trellisRes=1024;      // 512 | 1024 | 1536
+var trellisSsSteps=20;    // ss_sampling_steps (1-50) — structure sparse
+var trellisSlatSteps=20;  // slat_sampling_steps (1-50) — surface SLAT
+var trellisGuidance=7.5;  // guidance_scale (1-10)
+var trellisTexSize=2048;  // texture_size (512/1024/2048/4096)
+var trellisFaceLimit=50;  // mesh_simplify int (5-100), ×1000 = faces
+var trellisPoll=null;
+var trellisAbortCtrl=null;
+var histSelIdx=-1;        // index de l'item historique sélectionné
 const TRELLIS_URL='http://127.0.0.1:7960';
 
 const QCFG={
@@ -344,7 +344,7 @@ const QCFG={
    On stocke le binaire GLB ici pour pouvoir recharger depuis l'historique.
    ══════════════════════════════════════════════ */
 const IDB_NAME='form3d_v1',IDB_STORE='glbs';
-let _idbPromise=null;
+var _idbPromise=null;
 function idbOpen(){
   if(_idbPromise)return _idbPromise;
   _idbPromise=new Promise((resolve,reject)=>{
@@ -760,7 +760,7 @@ function enhancePrompt(){
   ta.classList.add('prompt-flash');setTimeout(()=>ta.classList.remove('prompt-flash'),800);
 }
 
-let currentEnhanceStyle='realistic';
+var currentEnhanceStyle='realistic';
 function setEnhanceStyle(s){
   currentEnhanceStyle=s;
   document.querySelectorAll('.enh-style').forEach(el=>el.classList.toggle('on',el.dataset.style===s));
@@ -1002,7 +1002,7 @@ function _scoreOrientation(){
 /* ══════════════════════════════════════════════
    MESURES dans le viewer (distance + angle)
    ══════════════════════════════════════════════ */
-let measMode=false,measTool='distance',measPoints=[],measMarkers=[],measLines=[],measLabels=[];
+var measMode=false,measTool='distance',measPoints=[],measMarkers=[],measLines=[],measLabels=[];
 
 function toggleMeasure(){
   measMode=!measMode;
@@ -1079,7 +1079,7 @@ function _handleMeasureClick(e){
 /* ══════════════════════════════════════════════
    SECTION TRANSVERSALE (clipping plane)
    ══════════════════════════════════════════════ */
-let secMode=false,secAxis='x',secValue=100,secPlane=null;
+var secMode=false,secAxis='x',secValue=100,secPlane=null;
 
 function toggleSection(){setSecMode(!secMode)}
 function setSecMode(on){
@@ -1737,7 +1737,7 @@ function inferCols(){const p=(q('prompt').value||q('prompt2').value||'').toLower
 
 function setBatch(n,el){batchN=n;document.querySelectorAll('.batch-btn').forEach(b=>b.classList.remove('on'));el.classList.add('on');q('batch-tray').classList.remove('on');batchResults=[];updateCost()}
 
-let _scaleBefore=null,_scaleTimer=null;
+var _scaleBefore=null,_scaleTimer=null;
 function setScale(v){
   if(!_scaleBefore)_scaleBefore=_snapshotTransform();
   modelScale=v/100;
@@ -1919,27 +1919,27 @@ function setGuideTab(t){
   });
   document.querySelectorAll('.guide-pane').forEach(el=>el.classList.toggle('on',el.id==='guide-'+t));
 }
-let tT;
+var tT;
 function toast(msg,type=''){const t=q('toast');t.textContent=msg;t.className='toast on'+(type==='ok'?' ok':type===true||type==='err'?' err':'');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),3500)}
 
 /* ══════════════════════════════════════════════
    COLOR PAINTER — vertex colors brush
    + COLORIZE FROM IMAGE — projection caméra
    ══════════════════════════════════════════════ */
-let paintMode=false,paintColor='#9eff3a',paintRadius=0.15;
-let paintHardness=0.5; // 0 = soft falloff, 1 = bord net
-let paintBrushMode='soft'; // 'soft' | 'hard' | 'fill' | 'eyedrop'
-let paintFillAngle=35; // degres : angle entre normales pour flood vertex mode
-let paintFillTolerance=30; // tolerance couleur RGB pour flood texture mode (0-100)
-let paintSurface='auto'; // 'auto' | 'texture' | 'vertex'
-let _paintBeforeStroke=null;
-let _faceAdjCache=null,_faceAdjCacheMesh=null; // cache d'adjacence des faces
+var paintMode=false,paintColor='#9eff3a',paintRadius=0.15;
+var paintHardness=0.5; // 0 = soft falloff, 1 = bord net
+var paintBrushMode='soft'; // 'soft' | 'hard' | 'fill' | 'eyedrop'
+var paintFillAngle=35; // degres : angle entre normales pour flood vertex mode
+var paintFillTolerance=30; // tolerance couleur RGB pour flood texture mode (0-100)
+var paintSurface='auto'; // 'auto' | 'texture' | 'vertex'
+var _paintBeforeStroke=null;
+var _faceAdjCache=null,_faceAdjCacheMesh=null; // cache d'adjacence des faces
 
 /* ─── Canvas texture painting state ─── */
-let paintCanvas=null,paintCtx=null,paintTexture=null;
-let _origMaterials=null; // sauvegarde des materials originaux pour restaurer
-let _paintModeIsTexture=false; // mode actif
-let paintColorHistory=['#9eff3a','#ff4f4f','#4fc3f7','#f5a623','#b06ef3','#ffffff','#1a1a1a','#76b900'];
+var paintCanvas=null,paintCtx=null,paintTexture=null;
+var _origMaterials=null; // sauvegarde des materials originaux pour restaurer
+var _paintModeIsTexture=false; // mode actif
+var paintColorHistory=['#9eff3a','#ff4f4f','#4fc3f7','#f5a623','#b06ef3','#ffffff','#1a1a1a','#76b900'];
 
 function togglePaint(){
   paintMode=!paintMode;
@@ -2511,7 +2511,7 @@ function _makeMinimalZip(files){
   out.set(new Uint8Array(eocd),pos);
   return out.buffer;
 }
-let _crcTable=null;
+var _crcTable=null;
 
 /* ══════════════════════════════════════════════
    COLORIZE FROM IMAGE — projection caméra
@@ -2577,8 +2577,8 @@ function _handleColorizeInput(e){
 /* ══════════════════════════════════════════════
    LIGHTING PRESETS — 5 ambiances
    ══════════════════════════════════════════════ */
-let lightGroup=null;
-let currentLighting=localStorage.getItem('form3d_lighting')||'neon';
+var lightGroup=null;
+var currentLighting=localStorage.getItem('form3d_lighting')||'neon';
 const LIGHTING_PRESETS={
   neon:{
     name:'Neon (défaut)',
@@ -2673,9 +2673,9 @@ function setLightingByUser(name){
    nativement (clic droit modele -> Make hollow). Ici on calcule
    l'economie de filament + on previsualise visuellement.
    ══════════════════════════════════════════════ */
-let hollowPreviewMesh=null;
-let hollowWallMm=2.0; // 2mm wall par defaut
-let hollowDrain=true;
+var hollowPreviewMesh=null;
+var hollowWallMm=2.0; // 2mm wall par defaut
+var hollowDrain=true;
 
 function toggleHollowPanel(){
   const h=q('hollow-hud');if(!h)return;
@@ -2860,7 +2860,7 @@ function mobTab(tab){
 }
 /* Tracking : seul un VRAI changement de breakpoint déclenche un reset
    (sinon le scroll mobile shrink la barre URL -> resize -> reset au tab Config) */
-let _wasMobile=null;
+var _wasMobile=null;
 function initMob(force){
   const isMob=window.innerWidth<=768;
   if(!force&&_wasMobile===isMob)return; // déjà dans le bon mode, on ignore
