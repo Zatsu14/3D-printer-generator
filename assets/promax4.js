@@ -238,7 +238,12 @@ function initHudDrag(){
    SMART SUGGESTIONS
    Tips contextuels qui apparaissent au bon moment
    ══════════════════════════════════════════════ */
+/* Tips vus : persistes en localStorage — un tip educatif ne revient JAMAIS une fois vu */
 let _smartTipShown=new Set();
+try{_smartTipShown=new Set(JSON.parse(localStorage.getItem('form3d_tips_seen')||'[]'))}catch(e){}
+function _persistTipsSeen(){
+  try{localStorage.setItem('form3d_tips_seen',JSON.stringify([..._smartTipShown]))}catch(e){}
+}
 const SMART_TIPS=[
   {
     id:'orient-after-import',
@@ -275,7 +280,6 @@ const SMART_TIPS=[
     msg:'<b>GLB est gratuit</b>. Pour économiser tes crédits Tripo, convertis en STL via Blender (cf Guide).',
     cta:'Comprendre',
     action:()=>{if(typeof openModal==='function')openModal('modal-guide')},
-    interval:60000 // re-show max 1x/min
   },
 ];
 function checkSmartTips(){
@@ -283,12 +287,13 @@ function checkSmartTips(){
   const tip=document.getElementById('smart-tip');if(!tip)return;
   if(tip.classList.contains('on'))return; // un seul a la fois
   for(const t of SMART_TIPS){
-    if(_smartTipShown.has(t.id)&&!t.interval)continue;
+    if(_smartTipShown.has(t.id))continue; // deja vu = ne revient jamais
     try{if(t.trigger()){_showSmartTip(t);break}}catch(e){}
   }
 }
 function _showSmartTip(t){
   _smartTipShown.add(t.id);
+  _persistTipsSeen();
   const tip=document.getElementById('smart-tip');
   document.getElementById('smart-tip-ico').textContent=t.icon||'💡';
   document.getElementById('smart-tip-msg').innerHTML=t.msg;
@@ -314,6 +319,7 @@ function buildSmartTip(){
     <span class="smart-tip-ico" id="smart-tip-ico">💡</span>
     <span id="smart-tip-msg">…</span>
     <button class="smart-tip-cta" id="smart-tip-cta">OK</button>
+    <button class="smart-tip-mute" onclick="disableTips()" title="Désactiver toutes les astuces" aria-label="Ne plus afficher les astuces">Ne plus afficher</button>
     <button class="smart-tip-close" onclick="hideSmartTip()" aria-label="Fermer">×</button>
   `;
   document.body.appendChild(t);
