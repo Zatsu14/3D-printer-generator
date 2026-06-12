@@ -1,0 +1,180 @@
+/* ══════════════════════════════════════════════
+   TYPOGRAPHY — refonte lisibilité & sobriété
+   Inter      → UI générale (textes, boutons, descriptions)
+   JetBrains Mono → valeurs techniques (stats, dims, IDs, kbd)
+   Space Grotesk  → identité (logo, grands titres)
+   Chargé en DERNIER : prime sur tous les styles précédents.
+   ══════════════════════════════════════════════ */
+
+:root{
+  --ui:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',Consolas,monospace; /* remplace Space Mono partout */
+  --dis:'Inter',system-ui,sans-serif;          /* boutons + titres en Inter */
+  --brand:'Space Grotesk',sans-serif;          /* logo & identité uniquement */
+}
+
+/* ── Base : Inter pour tout le corps ── */
+html,body{font-family:var(--ui)}
+body{
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+}
+
+/* ── Identité : logo garde Space Grotesk ── */
+.logo-t{font-family:var(--brand);letter-spacing:.12em}
+.guide-t,.settings-title,.tour-title{font-family:var(--brand)}
+
+/* ── Labels de section : Inter semi-bold, plus lisible que mono uppercase ── */
+.lbl{
+  font-family:var(--ui);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.1em;
+}
+
+/* ── Descriptions & sous-titres : Inter (fini la mono illisible en 10px) ── */
+.toggle-sub,.tr-toggle-sub,.tr-desc,.kh,.mv-hint,
+.settings-row-sub,.smart-tip,.tour-text,
+.drop p,.emp p,.he,.hi-prev-empty,
+.es-anim p,.notif-empty,.guide-pane p,.guide-pane li,
+.pp-btn-sub,.spec-label,.ed2,
+.tr-offline-box,.modal-s,.fab-action-lbl,
+.notif-item-msg,.ct{
+  font-family:var(--ui);
+  letter-spacing:0;
+}
+/* Tailles minimales relevées : plus rien sous 11px pour le texte descriptif */
+.tr-desc,.tr-toggle-sub,.toggle-sub{font-size:11.5px;line-height:1.5}
+.settings-row-sub{font-size:11.5px}
+.spec-label{font-size:10.5px;font-weight:600}
+.pp-btn-sub{font-size:11.5px;line-height:1.5}
+.ed2{font-size:11.5px}
+.kh{font-size:12px}
+.he{font-size:13px}
+.guide-pane p,.guide-pane li{font-size:13px;line-height:1.7}
+
+/* ── Valeurs techniques : JetBrains Mono (dims, stats, prix, IDs) ── */
+.spec-val,.cost-val,.stat-val,.tr-sl-val,.scale-lbl,.scale-mm,
+.q-card-cr,.q-card-time,.him,.fin-p,.fg,.fil-cost,
+.credit-chip,.notif-item-time,.status-bar,kbd,.cmd-key,.ctx-item-key,
+#poster-stats,#poster-imginfo,.hollow-stats,.meas-result,#sec-result{
+  font-family:var(--mono);
+  letter-spacing:0;
+}
+.spec-val{font-size:12.5px}
+
+/* ── Boutons & navigation : Inter, poids medium-bold ── */
+.tab,.r-tab,.l-tab,.bk-btn,.guide-tab,.mbtn,
+.pp-btn,.r-btn,.batch-btn,.chip-filt,.tr-preset,
+.meas-tool,.base-type,.brush-mode,.ps-tab,.light-card,
+.enh-btn,.enh-style,.enh-apply,.es-cta,.tour-btn,
+.settings-data-btn,.notif-foot-btn,.meas-clear,.tr-link,
+.help-btn,.kbd-btn,.stat-reset,.chip-clear,.hi-reload{
+  font-family:var(--ui);
+  letter-spacing:.01em;
+}
+.tab{font-size:13px;font-weight:600}
+.r-tab{font-size:11.5px;font-weight:600;letter-spacing:.02em}
+.l-tab{font-size:11px;font-weight:600}
+.chip-filt{font-size:10.5px;font-weight:600;letter-spacing:.03em}
+.bk-btn{font-size:11.5px;font-weight:600}
+
+/* ── Inputs & formulaires : Inter pour le confort de saisie ── */
+.ta,.inp,.fil-price-inp,.hist-tools-row input,.cmd-search input{
+  font-family:var(--ui);
+  font-size:13.5px;
+  letter-spacing:0;
+}
+.ta{line-height:1.6}
+.ta::placeholder,.inp::placeholder{color:var(--t3);font-weight:400}
+
+/* ── Cards & items : hiérarchie claire ── */
+.hip{font-size:12.5px;font-weight:600;letter-spacing:0}
+.him{font-size:10.5px}
+.q-card-name{font-size:14px;font-weight:700;letter-spacing:0}
+.toggle-label,.tr-toggle-lbl{font-size:12.5px;font-weight:600;letter-spacing:0}
+.settings-row-lbl{font-size:13px}
+.pr-name{font-size:13px}
+.pr-sub{font-family:var(--mono);font-size:10px}
+.pr-desc{font-family:var(--ui);font-size:10.5px;letter-spacing:0}
+.mat-name{font-family:var(--ui);font-size:11.5px;font-weight:600}
+.mat-den{font-family:var(--mono);font-size:9.5px}
+.tr-res-name,.tr-tex-name{font-family:var(--ui);font-size:12px;font-weight:700}
+.tr-res-sub{font-family:var(--ui);font-size:10px;letter-spacing:0}
+.tr-sl-row label{font-family:var(--ui);font-size:12px;font-weight:600}
+
+/* ── Specs : sections lisibles ── */
+.spec-section-h{font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.08em}
+.fin-n{font-size:12.5px;font-weight:600}
+.en2{font-size:13px;font-weight:600}
+
+/* ── Contraste relevé du texte secondaire (confort de lecture) ── */
+:root{
+  --t2:#c4c4d4; /* avant #b8b8cc */
+  --t3:#8e8ea4; /* avant #787890 */
+}
+
+/* ── Petits composants ── */
+.toast{font-family:var(--ui);font-size:13px;font-weight:600;letter-spacing:0}
+.ib-lbl,#tip-float{font-family:var(--ui);font-size:10.5px;font-weight:600;letter-spacing:.04em}
+.cost-label,.batch-lbl{font-family:var(--ui);font-size:12px;letter-spacing:0}
+.stat-lbl{font-family:var(--ui);font-size:10.5px;font-weight:600;letter-spacing:.06em}
+.hist-tools-row input{font-size:12px}
+.notif-title{font-family:var(--ui)}
+.settings-sec-h{font-family:var(--ui);letter-spacing:.08em}
+.ctx-item{font-family:var(--ui)}
+.ctx-header{font-family:var(--ui);letter-spacing:.08em}
+.cmd-row{font-family:var(--ui)}
+.cmd-empty{font-family:var(--ui)}
+.cmd-footer{font-family:var(--ui)}
+.emp-kbd{font-family:var(--ui);font-size:10.5px}
+.tour-step{font-family:var(--ui);letter-spacing:.08em}
+.theme-name{font-family:var(--ui);font-size:11px;font-weight:600}
+.gb{font-family:var(--ui);font-size:15px;font-weight:700;letter-spacing:.02em}
+.gb-stop{font-family:var(--ui)}
+.meas-head{font-family:var(--ui);font-size:12.5px}
+.meas-help{font-family:var(--ui);font-size:11px;letter-spacing:0;line-height:1.55}
+.plb{font-family:var(--ui);font-size:13.5px;font-weight:600;letter-spacing:0}
+.psb{font-family:var(--mono);font-size:10.5px}
+.rpc{font-family:var(--mono)}
+.es-anim h4,.empty-state h4{font-family:var(--ui);font-size:15px}
+.emp h3{font-family:var(--ui);font-size:16px;font-weight:700}
+.hb{font-family:var(--ui);font-size:11px;letter-spacing:0}
+.guide-pane h3{font-family:var(--ui);font-size:13px;letter-spacing:.06em}
+.guide-pane code{font-family:var(--mono);font-size:11.5px}
+.g-table{font-family:var(--ui);font-size:12px}
+.g-table th{font-size:10px}
+.spec-warn,.guide-warn,.guide-tip,.ex-tip,.tr-tip{font-family:var(--ui);font-size:11.5px;letter-spacing:0;line-height:1.6}
+.ex-badge{font-family:var(--ui);font-size:9px;font-weight:700}
+.ex-cat{font-family:var(--ui);font-size:10px;font-weight:700;letter-spacing:.08em}
+.fil-foot{font-family:var(--ui);font-size:12px}
+.fil-ctrl label{font-family:var(--ui);font-size:11px}
+.g-card-h{font-size:13.5px}
+.paint-surface-info{font-family:var(--mono);font-size:10px}
+
+/* ── Aération générale : sections un peu plus respirantes ── */
+.sec{padding:12px 16px}
+.lbl{margin-bottom:9px}
+.toggle-row,.tr-toggle-row{padding:9px 12px}
+
+/* ── Chiffres tabulaires pour les stats qui changent (pas de jitter) ── */
+.stat-val,.cost-val,.scale-lbl,#sb-fps,.tr-sl-val{font-variant-numeric:tabular-nums}
+
+/* ── Mobile : tailles texte confortables au pouce ── */
+@media(max-width:768px){
+  body{font-size:13.5px}
+  .tab{font-size:12px}
+  .toggle-label,.tr-toggle-lbl{font-size:12.5px}
+  .toggle-sub,.tr-toggle-sub,.tr-desc{font-size:11px}
+}
+
+/* Sélecteurs à spécificité supérieure manqués au premier passage */
+.empty-state p,.es-anim p{font-family:var(--ui);font-size:12px;letter-spacing:0}
+.empty-state h4{font-family:var(--ui)}
+.hi-prev-empty{font-size:11.5px}
+.notif-empty{font-size:12px}
+.cmd-search input{font-size:15px}
+.smart-tip{font-size:13px}
